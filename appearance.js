@@ -1,0 +1,96 @@
+const appearanceKey='wallet-appearance-v1:'+location.pathname.replace(/index\.html$/,'');
+let personal=null, customPage='home', concealed=false;
+const personalActions=new Set(['home','cards','account','settings','wealth','activity','income','expense','request','freeze','details','limit','pin','cardCode','hide','accountInfo','watch','travel','refer','dismiss','import','resources','recipients','payments','options','back','upload','currency','activate']);
+const valueNames=new Set(['cash','eur','holder','initials','frozen','accountId']);
+const maxThemeBytes=2500000;
+function checkAppearance(t){
+ const art=v=>typeof v==='string'&&/^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(v);
+ if(t?.format!=='personal-wallet-1'||!art(t.icon))throw Error('Select a wallet appearance file.');
+ for(const name of ['home','cards','account']){
+  const p=t[name];
+  if(!p||!art(p.background)||!art(p.nav)||!Array.isArray(p.regions)||p.regions.length>60||!Number.isFinite(p.height)||p.height<100||p.height>3000)throw Error('Invalid screen.');
+  for(const r of p.regions){
+   if(![r.x,r.y,r.w,r.h].every(n=>Number.isFinite(n)&&n>=0&&n<=3000)||typeof r.label!=='string'||r.label.length>100||r.action&&!personalActions.has(r.action)||r.value&&!valueNames.has(r.value))throw Error('Invalid screen control.');
+   if(r.value&&(!Number.isFinite(r.size)||r.size<12||r.size>150))throw Error('Invalid text size.');
+  }
+ }return t;
+}
+try{const storedTheme=localStorage.getItem(appearanceKey);if(storedTheme)personal=checkAppearance(JSON.parse(storedTheme))}catch{}
+async function importAppearance(file){
+ if(!file)return;
+ try{if(file.size>maxThemeBytes)throw Error('Appearance file is too large.');
+ const t=checkAppearance(JSON.parse(await file.text()));localStorage.setItem(appearanceKey,JSON.stringify(t));personal=t;customPage='home';tab='Wallet';render();scrollTo(0,0);
+ await cachePersonalIcon(t.icon)}
+ catch(e){alert(e.message)}finally{document.querySelector('#appearance-file').value=''}
+}
+function applyAppearance(){
+ document.body.classList.toggle('personal',!!personal);
+ document.documentElement.classList.toggle('night-wallet',!!personal);
+ document.querySelector('meta[name=theme-color]').content=personal?'#121411':'#f6f7ef';
+ document.querySelector('link[rel=apple-touch-icon]').href=personal?(iconCached?'./personal-touch.png':personal.icon):'./icon.png';
+}
+let iconCached=false;
+async function cachePersonalIcon(url){
+ try{
+  const cache=await caches.open('local-art:'+new URL('./',location.href).href);
+  const bytes=Uint8Array.from(atob(url.split(',')[1]),c=>c.charCodeAt(0));
+  await cache.put('./personal-touch.png',new Response(bytes,{headers:{'Content-Type':'image/png'}}));
+  if(personal?.icon===url){iconCached=true;applyAppearance()}
+ }catch{}
+}
+if(personal)cachePersonalIcon(personal.icon);
+function appearanceControls(){return '<div class="sectionhead"><h2>Appearance</h2></div><button class="line" data-look="import">Import personal appearance file　›</button>'+(personal?'<a class="line" download="Wallet-Icon.png" href="'+personal.icon+'">Save Home Screen icon　↓</a><button class="line" data-look="default">Use default appearance　›</button>':'')}
+function regionHTML(r,height){
+ const values={cash:concealed?'••••':money(cash()),eur:concealed?'••••':money(cash()).replace('€','')+' EUR',holder:wallet.name+'　•••• '+wallet.last,initials:wallet.name.trim().split(/\s+/).slice(0,2).map(s=>s[0]).join('').toUpperCase(),frozen:wallet.frozen?'Unfreeze card':'Freeze card',accountId:wallet.referenceLabel||'Account details'};
+ const style='left:'+r.x/944*100+'%;top:'+r.y/height*100+'%;width:'+r.w/944*100+'%;height:'+r.h/height*100+'%;'+(r.value?'font-size:'+r.size/944*100+'cqw;justify-content:'+(r.center?'center':'flex-start')+';':'');
+ const cls='region'+(r.value?' live-label':'')+(r.accent?' accent':'');
+ return r.action?'<button class="'+cls+'" style="'+style+'" data-look="'+r.action+'" aria-label="'+esc(r.label)+'">'+(r.value?esc(values[r.value]):'')+'</button>':'<span class="'+cls+'" style="'+style+'">'+esc(values[r.value]||'')+'</span>';
+}
+function personalNav(){
+ const links=[['home','⌂','Home'],['cards','▭','Cards'],['recipients','♧','Recipients'],['payments','⇄','Payments']];
+ return '<nav class="glassnav" aria-label="Main navigation">'+links.map(([id,glyph,name])=>'<button data-look="'+id+'" '+(customPage===id?'aria-current="page"':'')+'><span>'+glyph+'</span>'+name+'</button>').join('')+'</nav>';
+}
+function personalScreen(){
+ if(!personal||tab!=='Wallet')return false;
+ if(customPage==='recipients'||customPage==='payments'){
+ const people=[...new Set(wallet.entries.map(r=>r.name))];
+ app.innerHTML='<div class="extra-screen"><button class="pill" data-look="home">← Home</button><h1>'+(customPage==='payments'?'Payments':'Recipients')+'</h1>'+(customPage==='payments'?'<button class="pill" data-look="expense">Send</button> <button class="pill" data-look="request">Request</button>'+entries():people.map(name=>'<div class="line">'+esc(name)+'</div>').join(''))+'</div>'+personalNav();return true;
+ }
+ const p=personal[customPage]||personal.home;
+ const hero='<section class="ref-panel" aria-label="'+customPage+'" style="aspect-ratio:944/'+p.height+'"><img class="reference-art" alt="" src="'+p.background+'">'+p.regions.map(r=>regionHTML(r,p.height)).join('')+'</section>';
+ const tx=customPage==='account'?'<section class="ref-ledger" aria-label="Transactions">'+entries()+'</section>':'';
+ const bar=customPage==='account'?'<nav class="glassnav accountbar"><button data-look="income"><span>＋</span>Add</button><button data-look="currency"><span>⇄</span>Convert</button><button data-look="expense"><span>↑</span>Send</button><button data-look="request"><span>↓</span>Request</button></nav>':personalNav();
+ app.innerHTML='<div class="phoneview">'+hero+tx+'</div>'+bar;
+ const dock=app.querySelector('nav');dock.classList.add('artdock');dock.style.backgroundImage='url('+p.nav+')';
+ requestAnimationFrame(()=>{
+  for(const el of app.querySelectorAll('.live-label')){
+   if(el.clientWidth&&el.scrollWidth>el.clientWidth){el.style.fontSize=(parseFloat(getComputedStyle(el).fontSize)*el.clientWidth/el.scrollWidth)+'px'}
+  }
+ });
+ return true;
+}
+function message(title,body){
+ const d=document.createElement('dialog');d.className='notice';const h=document.createElement('h2'),p=document.createElement('p'),b=document.createElement('button');
+ h.textContent=title;p.textContent=body;b.textContent='Done';b.className='primary';d.append(h,p,b);document.body.append(d);b.onclick=()=>d.close();d.onclose=()=>d.remove();d.showModal();
+}
+function recordFlow(kind,title){
+ edit('entries','new');document.querySelector('#sheetTitle').textContent=title;form.elements.kind.value=kind;
+}
+function goLook(a){
+ if(['home','cards','account','payments','recipients'].includes(a)){tab='Wallet';customPage=a;render();scrollTo(0,0);return}
+ if(['settings','wealth','activity','resources','options','back'].includes(a)){tab=({wealth:'Wealth',activity:'Activity',back:'Wallet'})[a]||'Settings';customPage='home';render();scrollTo(0,0);return}
+ if(a==='import'||a==='upload'){document.querySelector('#appearance-file').click();return}
+ if(a==='default'){localStorage.removeItem(appearanceKey);personal=null;iconCached=false;if('caches' in window)caches.delete('local-art:'+new URL('./',location.href).href);render();return}
+ if(a==='hide'){concealed=!concealed;render();return}
+ if(a==='income'||a==='expense'){recordFlow(a==='income'?'Income':'Expense',a==='income'?'Add money':'Record a payment');return}
+ if(a==='request'){recordFlow('Income','Record a simulated request received');return}
+ if(a==='cardCode'){message('Virtual card PIN',wallet.displayPin||'0000');return}
+ if(a==='freeze'){editAction='freeze';save();return}
+ if(['limit','details','pin'].includes(a)){edit(a);return}
+ if(a==='accountInfo'){
+ const ref=prompt('Personal account label',wallet.referenceLabel||'');if(ref!==null){const copy={...wallet,referenceLabel:ref.trim().slice(0,34)};persist(copy).then(()=>{if(wallet){wallet=copy;render()}}).catch(()=>alert('Could not save account label.'))}return}
+ const notes={cardCode:['Card PIN','This virtual card has no payment PIN. You can set your app lock under Settings.'],watch:['Apple Watch','Apple Pay provisioning requires a card issued by a supported bank.'],travel:['Travel hub','Your wallet uses euros. View activity to review travel spending.'],refer:['Rewards','Promotions in this personal preview are illustrative.'],currency:['Currency','This wallet is denominated in euros.'],activate:['Virtual card','Your personal virtual card is ready to use in the simulator.'],dismiss:['Goals','Open Wealth to edit your goals and holdings.']};if(notes[a])message(...notes[a]);
+}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-look]');if(b&&!busy)goLook(b.dataset.look)});
+document.querySelector('#appearance-file').addEventListener('change',e=>importAppearance(e.target.files[0]));
+

@@ -8,7 +8,7 @@ const sum = rows => rows.reduce((v,r)=>v+r.amount,0);
 const seed = () => ({name:'Cardholder',last:'4821',limit:350000,opening:1800000,frozen:false,
  entries:[{id:'e1',name:'Studio income',amount:185000,kind:'Income',date:today()},{id:'e2',name:'Weekend travel',amount:42500,kind:'Expense',date:today()}],
  holdings:[{id:'h1',name:'Index portfolio',kind:'Investment',amount:800000}],goals:[{id:'g1',name:'First €50,000',amount:5000000}]});
-let wallet, cryptoKey, salt, tab='Wallet', busy=false;
+let wallet, cryptoKey, salt, tab=new URLSearchParams(location.search).has('setup')?'Settings':'Wallet', busy=false;
 const encoder = new TextEncoder();
 const to64 = bytes => btoa(Array.from(new Uint8Array(bytes),n=>String.fromCharCode(n)).join(''));
 const from64 = s => Uint8Array.from(atob(s),c=>c.charCodeAt(0));
@@ -38,7 +38,13 @@ function wealth(){return '<h1>My wealth</h1><div class="hero"><p class="kicker">
 function holdingRows(){return wallet.holdings.map(r=>row(r.name,r.kind,money(r.amount),'holdings/'+r.id)).join('')||'<p class="empty">Your holdings will appear here.</p>'}
 function goalRows(){return wallet.goals.map(r=>'<div class="panel">'+row(r.name,'Net worth target',money(r.amount),'goals/'+r.id)+track(worth(),r.amount)+'<small class="sub">'+Math.max(0,Math.floor(worth()/r.amount*100))+'% reached</small></div>').join('')||'<p class="empty">Add a goal to track your progress.</p>'}
 function settings(){return '<h1>Settings</h1>'+row('Available balance','Set the current cash balance',money(cash()),'balance')+row('Card details',wallet.name,'•• '+esc(wallet.last),'details')+row('Monthly limit','Spending target',money(wallet.limit),'limit')+row('App PIN',cryptoKey?'Enabled · change or remove':'Optional six-digit lock','›','pin')+'<div class="sectionhead"><h2>Transactions</h2>'+btn('Add transaction','entries/new','smallBtn')+'</div>'+entries()+'<div class="sectionhead"><h2>Assets & investments</h2>'+btn('Add holding','holdings/new','smallBtn')+'</div>'+holdingRows()+'<div class="sectionhead"><h2>Goals</h2>'+btn('Add goal','goals/new','smallBtn')+'</div>'+goalRows()+'<p class="sub">Personal simulation · Fictional euro amounts. Changes are saved on this device.</p>'}
-function render(){const pages={Wallet:dashboard,Wealth:wealth,Settings:settings,Activity:()=>'<h1>Activity</h1><div class="stats">'+stat('Total income',sum(wallet.entries.filter(r=>r.kind==='Income')))+stat('Total expenses',sum(wallet.entries.filter(r=>r.kind==='Expense')))+'</div><div class="sectionhead"><h2>Transactions</h2>'+btn('Add entry','entries/new','smallBtn')+'</div>'+entries()};app.innerHTML=mast+pages[tab]()+nav()}
+function render(){
+ const pages={Wallet:dashboard,Wealth:wealth,Settings:settings,Activity:()=>'<h1>Activity</h1><div class="stats">'+stat('Total income',sum(wallet.entries.filter(r=>r.kind==='Income')))+stat('Total expenses',sum(wallet.entries.filter(r=>r.kind==='Expense')))+'</div><div class="sectionhead"><h2>Transactions</h2>'+btn('Add entry','entries/new','smallBtn')+'</div>'+entries()};
+ applyAppearance();
+ if(personalScreen())return;
+ const content=pages[tab]();
+ app.innerHTML=mast+(tab==='Settings'?content.replace('<h1>Settings</h1>','<h1>Settings</h1>'+appearanceControls()):content)+nav();
+}
 function input(label,name,value='',options=''){return '<label>'+label+'<input name="'+name+'" value="'+esc(value)+'" required '+options+'></label>'}
 const amountInput=(label,value,min=0)=>input(label,'amount',(value/100).toFixed(2),'type="number" inputmode="decimal" step=".01" min="'+min+'" max="999999999999"');
 const textInput=(label,value)=>input(label,'name',value,'maxlength="48"');
@@ -50,7 +56,7 @@ function edit(action,id){
  const r=wallet[action]?.find?.(x=>x.id===id);
  const fields={
  balance:()=>['Available balance',amountInput('Current balance (€)',cash(),-999999999999)],
- details:()=>['Card details',textInput('Cardholder',wallet.name)+input('Display digits','last',wallet.last,'pattern="[0-9]{4}" inputmode="numeric" maxlength="4"')],
+ details:()=>['Card details',textInput('Cardholder',wallet.name)+input('Display digits','last',wallet.last,'pattern="[0-9]{4}" inputmode="numeric" maxlength="4"')+input('Simulated card PIN','displayPin',wallet.displayPin||'0000','pattern="[0-9]{4}" inputmode="numeric" maxlength="4"')+'<p class="sub">Use a fictional number for this card.</p>'],
  limit:()=>['Monthly spending limit',amountInput('Limit (€)',wallet.limit,.01)],
  entries:()=>[r?'Edit transaction':'Add transaction',textInput('Description',r?.name||'')+select('Type',['Income','Expense'],r?.kind)+amountInput('Amount (€)',r?.amount||0,.01)+input('Date','date',r?.date||today(),'type="date"')],
  holdings:()=>[r?'Edit holding':'Add holding',textInput('Holding name',r?.name||'')+select('Type',['Investment','Asset','Liability'],r?.kind)+amountInput('Current value (€)',r?.amount||0)],
@@ -79,7 +85,7 @@ async function save(remove=false){
  if(k){try{await unlock(values.current)}catch{throw Error('Current PIN is incorrect.')}}
  if(editAction==='pin'){if(values.pin!==values.confirm)throw Error('The new PINs do not match.');s=to64(crypto.getRandomValues(new Uint8Array(16)));k=await derive(values.pin,s)}else{k=null;s=null}
  }else if(editAction==='balance')data.opening+=amount-cash();
- else if(editAction==='details'){data.name=values.name.trim();data.last=values.last}
+ else if(editAction==='details'){data.name=values.name.trim();data.last=values.last;data.displayPin=values.displayPin}
  else if(editAction==='limit')data.limit=amount;
  else if(editAction==='freeze')data.frozen=!data.frozen;
  else {const list=data[editAction],index=list.findIndex(x=>x.id===recordId);
@@ -112,6 +118,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||
 $('#close').onclick=()=>sheet.close();form.onsubmit=e=>{e.preventDefault();save()};
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&cryptoKey&&!busy)lock()});
 window.addEventListener('pagehide',()=>{if(cryptoKey&&!busy)lock()});
+applyAppearance();
 init();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>console.warn('Offline setup unavailable.'));
 
