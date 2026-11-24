@@ -1,6 +1,6 @@
 const base = new URL('./',self.location.href).href;
 const prefix = 'wise-wallet:' + base + ':';
-const cacheName = prefix + '2';
+const cacheName = prefix + '3';
 const files = ['./','index.html','style.css','appearance.css','appearance.js','app.js','icon.svg','icon.png','manifest.webmanifest'];
 self.addEventListener('install', event => event.waitUntil(caches.open(cacheName).then(cache => cache.addAll(files)).then(()=>self.skipWaiting())));
 self.addEventListener('activate', event => event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith(prefix)&&k!==cacheName).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));

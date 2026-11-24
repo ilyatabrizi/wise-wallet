@@ -120,5 +120,6 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden&&cryptoKey&
 window.addEventListener('pagehide',()=>{if(cryptoKey&&!busy)lock()});
 applyAppearance();
 init();
+if(location.hash.startsWith('#look='))openAppearanceLink(location.href,true);
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>console.warn('Offline setup unavailable.'));
 

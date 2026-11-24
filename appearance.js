@@ -19,9 +19,40 @@ try{const storedTheme=localStorage.getItem(appearanceKey);if(storedTheme)persona
 async function importAppearance(file){
  if(!file)return;
  try{if(file.size>maxThemeBytes)throw Error('Appearance file is too large.');
- const t=checkAppearance(JSON.parse(await file.text()));localStorage.setItem(appearanceKey,JSON.stringify(t));personal=t;customPage='home';tab='Wallet';render();scrollTo(0,0);
- await cachePersonalIcon(t.icon)}
+ await installPersonalAppearance(await file.text())}
  catch(e){alert(e.message)}finally{document.querySelector('#appearance-file').value=''}
+}
+async function installPersonalAppearance(json){
+ const theme=checkAppearance(JSON.parse(json));
+ localStorage.setItem(appearanceKey,JSON.stringify(theme));
+ personal=theme;
+ customPage='home';
+ tab='Wallet';
+ if(wallet){render();scrollTo(0,0)}else{applyAppearance()}
+ await cachePersonalIcon(theme.icon);
+}
+async function openAppearanceLink(link,fromAddressBar=false){
+ try{
+  const url=new URL(link), own=new URL('./',location.href);
+  const match=/^#look=([A-Za-z0-9_-]{43})$/.exec(url.hash);
+  if(!match||url.origin!==own.origin||url.pathname!==own.pathname)throw Error('Paste the complete private setup link.');
+  const raw=Uint8Array.from(atob(match[1].replace(/-/g,'+').replace(/_/g,'/')+'='),c=>c.charCodeAt(0));
+  const key=await crypto.subtle.importKey('raw',raw,'AES-GCM',false,['decrypt']);
+  const response=await fetch('./personal-layout-v1.bin',{credentials:'omit',referrerPolicy:'no-referrer'});
+  if(!response.ok)throw Error('The appearance could not be loaded. Reopen the link while online.');
+  const bytes=new Uint8Array(await response.arrayBuffer());
+  if(bytes.length<29||bytes.length>maxThemeBytes+28)throw Error('Invalid appearance package.');
+  const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)},key,bytes.slice(12));
+  await installPersonalAppearance(new TextDecoder().decode(plain));
+  if(fromAddressBar)history.replaceState(null,'',own.pathname);
+ }catch(error){alert(error.name==='OperationError'?'The private link is incomplete or incorrect.':error.message)}
+}
+function downloadAppearance(){
+ if(!personal)return;
+ const blob=new Blob([JSON.stringify(personal)],{type:'application/json'});
+ const url=URL.createObjectURL(blob),anchor=document.createElement('a');
+ anchor.href=url;anchor.download='Wise-Personal.json';document.body.append(anchor);anchor.click();anchor.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),60000);
 }
 function applyAppearance(){
  document.body.classList.toggle('personal',!!personal);
@@ -39,7 +70,7 @@ async function cachePersonalIcon(url){
  }catch{}
 }
 if(personal)cachePersonalIcon(personal.icon);
-function appearanceControls(){return '<div class="sectionhead"><h2>Appearance</h2></div><button class="line" data-look="import">Import personal appearance file　›</button>'+(personal?'<a class="line" download="Wallet-Icon.png" href="'+personal.icon+'">Save Home Screen icon　↓</a><button class="line" data-look="default">Use default appearance　›</button>':'')}
+function appearanceControls(){return '<div class="sectionhead"><h2>Appearance</h2></div><button class="line" data-look="pasteLink">Use private setup link　›</button><button class="line" data-look="import">Import personal appearance file　›</button>'+(personal?'<button class="line" data-look="download">Save appearance file　↓</button><a class="line" download="Wallet-Icon.png" href="'+personal.icon+'">Save Home Screen icon　↓</a><button class="line" data-look="default">Use default appearance　›</button>':'')}
 function regionHTML(r,height){
  const values={cash:concealed?'••••':money(cash()),eur:concealed?'••••':money(cash()).replace('€','')+' EUR',holder:wallet.name+'　•••• '+wallet.last,initials:wallet.name.trim().split(/\s+/).slice(0,2).map(s=>s[0]).join('').toUpperCase(),frozen:wallet.frozen?'Unfreeze card':'Freeze card',accountId:wallet.referenceLabel||'Account details'};
  const style='left:'+r.x/944*100+'%;top:'+r.y/height*100+'%;width:'+r.w/944*100+'%;height:'+r.h/height*100+'%;'+(r.value?'font-size:'+r.size/944*100+'cqw;justify-content:'+(r.center?'center':'flex-start')+';':'');
@@ -77,6 +108,8 @@ function recordFlow(kind,title){
  edit('entries','new');document.querySelector('#sheetTitle').textContent=title;form.elements.kind.value=kind;
 }
 function goLook(a){
+ if(a==='pasteLink'){const link=prompt('Paste your private wallet setup link');if(link)openAppearanceLink(link.trim());return}
+ if(a==='download'){downloadAppearance();return}
  if(['home','cards','account','payments','recipients'].includes(a)){tab='Wallet';customPage=a;render();scrollTo(0,0);return}
  if(['settings','wealth','activity','resources','options','back'].includes(a)){tab=({wealth:'Wealth',activity:'Activity',back:'Wallet'})[a]||'Settings';customPage='home';render();scrollTo(0,0);return}
  if(a==='import'||a==='upload'){document.querySelector('#appearance-file').click();return}
