@@ -18,7 +18,10 @@ const bubble=(action,k,label)=>control(action,svg(k),'vbubble',label);
 const chip=(action,label,kind='')=>control(action,label,'vchip '+kind);
 const actRound=(action,k,label)=>control(action,'<i>'+svg(k)+'</i>'+label,'vround');
 const viewState={qr:false,accountTab:'Transactions',recipientScope:'All',search:'',searchOpen:false,accountUnit:'EUR',planKind:'',homeSlide:0};
-function flag(unit){return '<i class="vflag" role="img" aria-label="'+unit+'">'+({EUR:'🇪🇺',USD:'🇺🇸',AED:'🇦🇪'})[unit]+'</i>'}
+function flag(unit){
+ const stars=unit==='EUR'?Array.from({length:12},(_,i)=>'<i style="--turn:'+i*30+'deg"></i>').join(''):'';
+ return '<i class="vflag flag-'+unit+'" role="img" aria-label="'+unit+'">'+stars+'</i>';
+}
 const unitCash=unit=>unit==='EUR'?cash():(wallet.currencies?.[unit]||0);
 const homeTotal=()=>cash()+['USD','AED'].reduce((sum,u)=>sum+Math.round(unitCash(u)/planRates[u]),0);
 const number=cents=>(cents/100).toLocaleString('en-IE',{minimumFractionDigits:2,maximumFractionDigits:2});

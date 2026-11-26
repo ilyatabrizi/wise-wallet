@@ -1,6 +1,6 @@
 const base=new URL('./',self.location.href).href;
 const prefix='wise-wallet:'+base+':';
-const version=prefix+'6-film';
+const version=prefix+'7-film';
 const shell=['./','index.html','install.html','install.webmanifest','manifest.webmanifest','install-identity.js','video.js','wallet-controls.js','appearance.js','app.js','style.css','video.css','icon.svg','icon.png','personal-layout-v2.bin'];
 self.addEventListener('install',event=>event.waitUntil((async()=>{
  const cache=await caches.open(version);
