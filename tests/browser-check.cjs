@@ -11,7 +11,9 @@ const pack={format:'personal-wallet-2',icon:dataUri,film:Object.fromEntries(['ca
 const key=crypto.randomBytes(32),iv=crypto.randomBytes(12),aes=crypto.createCipheriv('aes-256-gcm',key,iv);
 fs.writeFileSync(path.join(walletDir,'personal-layout-v2.bin'),Buffer.concat([iv,aes.update(JSON.stringify(pack)),aes.final(),aes.getAuthTag()]));
 const types={'.js':'application/javascript','.css':'text/css','.html':'text/html','.webmanifest':'application/manifest+json','.png':'image/png','.svg':'image/svg+xml'};
+let originAvailable=true;
 const srv=http.createServer((req,res)=>{
+ if(!originAvailable){req.socket.destroy();return}
  const pathname=new URL(req.url,'http://localhost').pathname;
  const file=path.join(dir,pathname.endsWith('/')?pathname+'index.html':pathname);
  if(!fs.existsSync(file)){res.writeHead(404);res.end();return}
@@ -33,7 +35,7 @@ async function test(engine,base){
  await page.goto(url);
  await expectText('.vbalance','130.38 EUR');
  await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
- await page.waitForFunction(()=>document.querySelector('link[rel=apple-touch-icon]').href.endsWith('/personal-touch-v2.png'));
+ await page.waitForFunction(()=>document.querySelector('link[rel=apple-touch-icon]').href.startsWith('data:image/png;base64,'));
  const installed=await page.evaluate(async()=>{
   const manifest=await (await fetch(document.querySelector('link[rel=manifest]').href)).json();
   const icon=await fetch(document.querySelector('link[rel=apple-touch-icon]').href);
@@ -58,9 +60,9 @@ async function test(engine,base){
  await view('home');await view('unit/USD');await expectText('.vacchero','108.00 USD');await view('home');
  await view('hide');await expectText('.vbalance','••••');await view('hide');
  await view('dismiss/schedule');await page.locator('.vschedule').waitFor({state:'hidden'});
- await ctx.setOffline(true);await page.reload();await expectText('.vbalance','7,500.00 EUR');
+ originAvailable=false;await page.reload();await expectText('.vbalance','7,500.00 EUR');
  await view('cards');await expectText('.vcardactions','Unfreeze card');
- await ctx.setOffline(false);
+ originAvailable=true;
  const fresh=await browser.newContext({viewport:{width:320,height:650},isMobile:true});
  const second=await fresh.newPage();await second.goto(installed.manifest.start_url);await second.locator('.v-home').waitFor();
  assert(await second.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
