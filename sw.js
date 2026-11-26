@@ -1,14 +1,25 @@
-const base = new URL('./',self.location.href).href;
-const prefix = 'wise-wallet:' + base + ':';
-const cacheName = prefix + '3';
-const files = ['./','index.html','style.css','appearance.css','appearance.js','app.js','icon.svg','icon.png','manifest.webmanifest'];
-self.addEventListener('install', event => event.waitUntil(caches.open(cacheName).then(cache => cache.addAll(files)).then(()=>self.skipWaiting())));
-self.addEventListener('activate', event => event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith(prefix)&&k!==cacheName).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
-self.addEventListener('fetch', event=>{
-  if(event.request.method!=='GET'||!event.request.url.startsWith(base))return;
-  if(event.request.url===base+'personal-touch.png'){
-    event.respondWith(caches.open('local-art:'+base).then(async c=>(await c.match(event.request))||(await caches.match(base+'icon.png'))||fetch(base+'icon.png')));
-    return;
-  }
-  event.respondWith(caches.open(cacheName).then(async cache => (await cache.match(event.request.mode==='navigate'?new URL('index.html',base).href:event.request))||fetch(event.request)));
+const base=new URL('./',self.location.href).href;
+const prefix='wise-wallet:'+base+':';
+const version=prefix+'4-film';
+const shell=['./','index.html','install.html','install.webmanifest','manifest.webmanifest','install-identity.js','video.js','wallet-controls.js','appearance.js','app.js','style.css','video.css','icon.svg','icon.png','personal-layout-v2.bin'];
+self.addEventListener('install',event=>event.waitUntil((async()=>{
+ const cache=await caches.open(version);
+ await cache.addAll(shell.map(f=>new Request(new URL(f,base),{cache:'reload'})));
+ await self.skipWaiting();
+})()));
+self.addEventListener('activate',event=>event.waitUntil((async()=>{
+ await Promise.all((await caches.keys()).filter(k=>k.startsWith(prefix)&&k!==version).map(k=>caches.delete(k)));
+ await self.clients.claim();
+})()));
+self.addEventListener('fetch',event=>{
+ const req=event.request,url=new URL(req.url);
+ if(req.method!=='GET'||!url.href.startsWith(base))return;
+ if(['personal-touch-v2.png','personal-touch.png'].some(f=>url.href===base+f)){
+  event.respondWith((async()=>{const art=await caches.open('local-art:'+base);return (await art.match(base+'personal-touch-v2.png'))||(await art.match(base+'personal-touch.png'))||(await caches.match(base+'icon.png'))||fetch(req)})());return;
+ }
+ if(req.mode==='navigate'){
+  const page=url.pathname===new URL('install.html',base).pathname?'install.html':'index.html';
+  event.respondWith(caches.open(version).then(async c=>(await c.match(base+page))||fetch(req)));return;
+ }
+ event.respondWith(caches.open(version).then(async c=>(await c.match(req))||fetch(req)));
 });

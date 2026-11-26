@@ -1,12 +1,14 @@
 const $ = s => document.querySelector(s);
 const app = $('#app'), sheet = $('#sheet'), form = $('#editor');
-const keyName = 'wise-wallet:v1:' + location.pathname.replace(/index\.html$/, '');
+const keyName = 'wise-wallet:v1:' + new URL('./', location.href).pathname;
 const money = cents => new Intl.NumberFormat('en-IE',{style:'currency',currency:'EUR'}).format(cents/100);
 const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const today = () => {const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)};
 const sum = rows => rows.reduce((v,r)=>v+r.amount,0);
-const seed = () => ({name:'Cardholder',last:'4821',limit:350000,opening:1800000,frozen:false,
- entries:[{id:'e1',name:'Studio income',amount:185000,kind:'Income',date:today()},{id:'e2',name:'Weekend travel',amount:42500,kind:'Expense',date:today()}],
+const daysAgo = n => {const d=new Date(today()+'T12:00:00');d.setDate(d.getDate()-n);return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)};
+const seed = () => ({name:'Val Stone',last:'0808',limit:350000,opening:11597,frozen:false,
+ entries:[{id:'e1',name:'Studio subscription',amount:10980,kind:'Income',date:daysAgo(1)},{id:'e2',name:'Software subscription',amount:10559,kind:'Expense',date:daysAgo(2)},{id:'e3',name:'Alex Morgan',amount:12000,kind:'Income',date:daysAgo(4)},{id:'e4',name:'Studio subscription',amount:10980,kind:'Expense',date:daysAgo(6)}],
+ recipients:[{id:'r1',name:'Alex Morgan',kind:'Recipient',note:'Euro account'},{id:'r2',name:'Sam Rivera',kind:'Recipient',note:'Travel account'},{id:'r3',name:'Travel savings',kind:'My account',note:'Personal account'}],
  holdings:[{id:'h1',name:'Index portfolio',kind:'Investment',amount:800000}],goals:[{id:'g1',name:'First €50,000',amount:5000000}]});
 let wallet, cryptoKey, salt, tab=new URLSearchParams(location.search).has('setup')?'Settings':'Wallet', busy=false;
 const encoder = new TextEncoder();
@@ -41,9 +43,9 @@ function settings(){return '<h1>Settings</h1>'+row('Available balance','Set the 
 function render(){
  const pages={Wallet:dashboard,Wealth:wealth,Settings:settings,Activity:()=>'<h1>Activity</h1><div class="stats">'+stat('Total income',sum(wallet.entries.filter(r=>r.kind==='Income')))+stat('Total expenses',sum(wallet.entries.filter(r=>r.kind==='Expense')))+'</div><div class="sectionhead"><h2>Transactions</h2>'+btn('Add entry','entries/new','smallBtn')+'</div>'+entries()};
  applyAppearance();
- if(personalScreen())return;
+ if(renderVideoWallet())return;
  const content=pages[tab]();
- app.innerHTML=mast+(tab==='Settings'?content.replace('<h1>Settings</h1>','<h1>Settings</h1>'+appearanceControls()):content)+nav();
+ app.innerHTML=mast+(tab==='Settings'?content.replace('<h1>Settings</h1>','<h1>Settings</h1>'+extraSettings())+appearanceControls():content)+nav();
 }
 function input(label,name,value='',options=''){return '<label>'+label+'<input name="'+name+'" value="'+esc(value)+'" required '+options+'></label>'}
 const amountInput=(label,value,min=0)=>input(label,'amount',(value/100).toFixed(2),'type="number" inputmode="decimal" step=".01" min="'+min+'" max="999999999999"');
@@ -64,7 +66,7 @@ function edit(action,id){
  pin:()=>['App PIN','<p class="sub">Locks when you leave the app. Keep your PIN safe. It is needed to open your encrypted wallet.</p>'+(cryptoKey?pinInput('Current PIN','current'):'')+pinInput('New six-digit PIN','pin')+pinInput('Confirm new PIN','confirm')+(cryptoKey?btn('Remove PIN','removePin','smallBtn danger'):'')],
  removePin:()=>['Remove PIN',pinInput('Current PIN','current')]
  };
- const [title,html]=fields[action]();$('#sheetTitle').textContent=title;$('#fields').innerHTML=html+(r?btn('Delete entry','delete','smallBtn danger'):'');$('#error').textContent='';if(!sheet.open)sheet.showModal();
+ const [title,html]=extraFields(action,id,r)||fields[action]();$('#sheetTitle').textContent=title;$('#fields').innerHTML=html+(r?btn('Delete entry','delete','smallBtn danger'):'');$('#error').textContent='';if(!sheet.open)sheet.showModal();
 }
 async function unlock(pin){
  const stored=JSON.parse(localStorage.getItem(keyName));const k=await derive(pin,stored.salt);
@@ -72,7 +74,7 @@ async function unlock(pin){
  return {data:JSON.parse(new TextDecoder().decode(bytes)),k,s:stored.salt};
 }
 function lock(){
- wallet=null;cryptoKey=null;salt=null;tab='Wallet';if(sheet.open)sheet.close();$('#fields').replaceChildren();
+ wallet=null;cryptoKey=null;salt=null;tab='Wallet';customPage='home';viewState.search='';document.querySelectorAll('dialog[open]').forEach(d=>d.close());$('#fields').replaceChildren();
  app.innerHTML=mast+'<form class="lockbox" id="unlock"><h1>Welcome back</h1>'+pinInput('Wallet PIN','pin')+'<p class="err" role="alert"></p><button class="primary">Unlock wallet</button></form>';
  $('#unlock').onsubmit=async e=>{e.preventDefault();const f=e.currentTarget;try{const u=await unlock(f.pin.value);if(document.hidden)return;wallet=u.data;cryptoKey=u.k;salt=u.s;render()}catch{f.querySelector('.err').textContent='Could not unlock. Check your PIN.'}};
 }
@@ -88,7 +90,7 @@ async function save(remove=false){
  else if(editAction==='details'){data.name=values.name.trim();data.last=values.last;data.displayPin=values.displayPin}
  else if(editAction==='limit')data.limit=amount;
  else if(editAction==='freeze')data.frozen=!data.frozen;
- else {const list=data[editAction],index=list.findIndex(x=>x.id===recordId);
+ else if(!saveExtra(editAction,recordId,data,values,amount,remove)){const list=data[editAction],index=list.findIndex(x=>x.id===recordId);
  if(remove){if(index>=0)list.splice(index,1)}
  else{const record={id:recordId==='new'?crypto.randomUUID():recordId,name:values.name.trim(),amount};
  if(values.date)record.date=values.date;if(values.kind)record.kind=values.kind;
@@ -120,6 +122,8 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden&&cryptoKey&
 window.addEventListener('pagehide',()=>{if(cryptoKey&&!busy)lock()});
 applyAppearance();
 init();
-if(location.hash.startsWith('#look='))openAppearanceLink(location.href,true);
+function activateFromAddress(){if(location.hash.startsWith('#look='))openAppearanceLink(location.href,true)}
+activateFromAddress();
+window.addEventListener('hashchange',activateFromAddress);
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>console.warn('Offline setup unavailable.'));
 

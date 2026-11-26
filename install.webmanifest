@@ -1,0 +1,16 @@
+{
+  "id": "./",
+  "name": "Wise Wallet",
+  "short_name": "Wise",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fafafa",
+  "theme_color": "#fafafa",
+  "icons": [
+    {
+      "src": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/42/33/c9/4233c9b2-6276-842b-a227-a5f7882318c9/AppIcon-0-0-1x_U007epad-0-1-0-85-220.png/512x512bb.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}

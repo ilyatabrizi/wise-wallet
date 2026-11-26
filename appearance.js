@@ -1,10 +1,11 @@
-const appearanceKey='wallet-appearance-v1:'+location.pathname.replace(/index\.html$/,'');
+const appearanceKey='wallet-appearance-v1:'+new URL('./',location.href).pathname;
 let personal=null, customPage='home', concealed=false;
 const personalActions=new Set(['home','cards','account','settings','wealth','activity','income','expense','request','freeze','details','limit','pin','cardCode','hide','accountInfo','watch','travel','refer','dismiss','import','resources','recipients','payments','options','back','upload','currency','activate']);
 const valueNames=new Set(['cash','eur','holder','initials','frozen','accountId']);
 const maxThemeBytes=2500000;
 function checkAppearance(t){
  const art=v=>typeof v==='string'&&/^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(v);
+ if(t?.format==='personal-wallet-2'&&art(t.icon)&&['card','lock','explore','partners'].every(name=>art(t.film?.[name])))return t;
  if(t?.format!=='personal-wallet-1'||!art(t.icon))throw Error('Select a wallet appearance file.');
  for(const name of ['home','cards','account']){
   const p=t[name];
@@ -35,16 +36,19 @@ async function openAppearanceLink(link,fromAddressBar=false){
  try{
   const url=new URL(link), own=new URL('./',location.href);
   const match=/^#look=([A-Za-z0-9_-]{43})$/.exec(url.hash);
-  if(!match||url.origin!==own.origin||url.pathname!==own.pathname)throw Error('Paste the complete private setup link.');
+  if(!match||url.origin!==own.origin||![own.pathname,own.pathname+'install.html',own.pathname+'index.html'].includes(url.pathname))throw Error('Paste the complete private setup link.');
   const raw=Uint8Array.from(atob(match[1].replace(/-/g,'+').replace(/_/g,'/')+'='),c=>c.charCodeAt(0));
   const key=await crypto.subtle.importKey('raw',raw,'AES-GCM',false,['decrypt']);
-  const response=await fetch('./personal-layout-v1.bin',{credentials:'omit',referrerPolicy:'no-referrer'});
+  if(fromAddressBar&&personal?.format==='personal-wallet-2'&&localStorage.getItem(appearanceKey+':activation')===match[1])return;
+  const response=await fetch('./personal-layout-v2.bin',{credentials:'omit',referrerPolicy:'no-referrer'});
   if(!response.ok)throw Error('The appearance could not be loaded. Reopen the link while online.');
   const bytes=new Uint8Array(await response.arrayBuffer());
   if(bytes.length<29||bytes.length>maxThemeBytes+28)throw Error('Invalid appearance package.');
   const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)},key,bytes.slice(12));
   await installPersonalAppearance(new TextDecoder().decode(plain));
-  if(fromAddressBar)history.replaceState(null,'',own.pathname);
+  localStorage.setItem(appearanceKey+':activation',match[1]);
+  if(!fromAddressBar)history.replaceState(null,'',own.pathname+'install.html'+url.hash);
+  applyAppearance();
  }catch(error){alert(error.name==='OperationError'?'The private link is incomplete or incorrect.':error.message)}
 }
 function downloadAppearance(){
@@ -56,16 +60,18 @@ function downloadAppearance(){
 }
 function applyAppearance(){
  document.body.classList.toggle('personal',!!personal);
- document.documentElement.classList.toggle('night-wallet',!!personal);
- document.querySelector('meta[name=theme-color]').content=personal?'#121411':'#f6f7ef';
- document.querySelector('link[rel=apple-touch-icon]').href=personal?(iconCached?'./personal-touch.png':personal.icon):'./icon.png';
+ document.documentElement.classList.toggle('video-wallet',!!personal);
+ document.querySelector('meta[name=theme-color]').content=personal?'#fafafa':'#f6f7ef';
+ document.querySelector('meta[name=apple-mobile-web-app-title]').content=personal?'Wise':'Wise Wallet';
+ if(personal)applyInstallIdentity();
+ else if(!location.pathname.endsWith('/install.html')&&!location.hash.startsWith('#look='))document.querySelector('link[rel=apple-touch-icon]').href='./icon.png';
 }
 let iconCached=false;
 async function cachePersonalIcon(url){
  try{
   const cache=await caches.open('local-art:'+new URL('./',location.href).href);
   const bytes=Uint8Array.from(atob(url.split(',')[1]),c=>c.charCodeAt(0));
-  await cache.put('./personal-touch.png',new Response(bytes,{headers:{'Content-Type':'image/png'}}));
+  await cache.put('./personal-touch-v2.png',new Response(bytes,{headers:{'Content-Type':'image/png'}}));
   if(personal?.icon===url){iconCached=true;applyAppearance()}
  }catch{}
 }
@@ -113,7 +119,7 @@ function goLook(a){
  if(['home','cards','account','payments','recipients'].includes(a)){tab='Wallet';customPage=a;render();scrollTo(0,0);return}
  if(['settings','wealth','activity','resources','options','back'].includes(a)){tab=({wealth:'Wealth',activity:'Activity',back:'Wallet'})[a]||'Settings';customPage='home';render();scrollTo(0,0);return}
  if(a==='import'||a==='upload'){document.querySelector('#appearance-file').click();return}
- if(a==='default'){localStorage.removeItem(appearanceKey);personal=null;iconCached=false;if('caches' in window)caches.delete('local-art:'+new URL('./',location.href).href);render();return}
+ if(a==='default'){localStorage.removeItem(appearanceKey);localStorage.removeItem(appearanceKey+':activation');history.replaceState(null,'',new URL('./',location.href).pathname);personal=null;iconCached=false;identityToken='';document.querySelector('link[rel=manifest]').href='./manifest.webmanifest';if('caches' in window)caches.delete('local-art:'+new URL('./',location.href).href);render();return}
  if(a==='hide'){concealed=!concealed;render();return}
  if(a==='income'||a==='expense'){recordFlow(a==='income'?'Income':'Expense',a==='income'?'Add money':'Record a payment');return}
  if(a==='request'){recordFlow('Income','Record a simulated request received');return}

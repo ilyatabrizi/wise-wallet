@@ -1,0 +1,95 @@
+.video-wallet,.personal{color-scheme:light;background:#fafafa;color:#10110f}
+.personal #app,.personal dialog{--ink:#11130f;--quiet:#50554d;--paper:#fafafa;--line:#e2e3df;background:var(--paper);color:var(--ink)}
+.personal #app:has(.vscreen){padding:0;border:0}
+.personal .primary,.personal nav .active{background:#9bea66;color:#14240c}
+.personal input,.personal select,.personal .pill,.personal .panel{background:#f3f4f0;color:#131510}
+.personal small,.personal .sub{color:#4e524a}
+.personal .smallBtn{color:#204d0a}
+.vscreen{--lime:#9cf362;--light:#e2f7d3;--dark:#153503;--grey:#efefed;--gutter:clamp(16px,4.1vw,23px);min-height:100dvh;padding:calc(env(safe-area-inset-top) + 24px) var(--gutter) calc(env(safe-area-inset-bottom) + 98px);overflow-x:clip;color:#10120f;font:500 16px/1.35 -apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif}
+.vscreen h1,.vscreen h2,.vscreen h3,.vmodal h2{font-family:inherit;font-weight:740;line-height:1.08;letter-spacing:-.045em}
+.vscreen h1{font-size:clamp(29px,7.5vw,40px);margin:28px 0 16px}
+.vscreen h2{font-size:clamp(22px,5.3vw,29px);margin:24px 0 12px}
+.vscreen button,.vdock button,.vmodal button{-webkit-tap-highlight-color:transparent}
+.vscreen svg,.vmodal svg,.vdock svg{width:1.2em;height:1.2em;display:inline-block;flex:none;vertical-align:-.18em}
+.vtop,.vtop>div,.vactions,.vfilters,.vbalance>div,.vcardactions,.vheading{display:flex;align-items:center}
+.vtop,.vheading{justify-content:space-between;gap:8px}
+.vtop>div,.vfilters,.vactions{gap:7px}
+.vtop{min-height:44px}
+.vchip,.vavatar,.vbubble{display:inline-flex;align-items:center;justify-content:center;gap:3px;border-radius:50px;background:var(--light);color:var(--dark);font-weight:710;white-space:nowrap}
+.vchip{min-height:40px;padding:8px 13px;font-size:16px;letter-spacing:-.035em}
+.vchip svg{width:1em;height:1em}
+.vgreen,.vround i,.vbranddot{background:linear-gradient(160deg,#acfa75,#8bed52)}
+.vsurface,.vavatar,.vbubble{background:#ededeb;color:#151711}
+.vsurface,.vtop .vgreen{min-height:44px;box-shadow:inset 0 1px 2px #fff,0 1px 2px #15191121}
+.vtop .vsurface{background:linear-gradient(155deg,#fafafa,#ededeb)}
+.vavatar{width:42px;height:42px;position:relative;font-size:17px}
+.vavatar:after{content:'';position:absolute;top:0;right:0;background:#bd0636;width:9px;height:9px;border:2px solid #fafafa;border-radius:20px}
+.vbubble{width:42px;height:42px;flex:none}
+.vbalance{margin:26px 0 16px;letter-spacing:-.03em}
+.vbalance>div{gap:10px;margin-top:3px}
+.vbalance strong{font-size:clamp(22px,5.5vw,31px);letter-spacing:-.04em;overflow-wrap:anywhere}
+.vbalance .vbubble{width:32px;height:32px;color:#1b380c}
+.vbalance .vbubble svg{width:15px}
+.vactions,.vaccounts{overflow:auto;scrollbar-width:none}
+.vactions::-webkit-scrollbar,.vaccounts::-webkit-scrollbar{display:none}
+.vactions{margin-right:calc(-1 * var(--gutter));padding-right:var(--gutter);gap:8px}
+.vaccounts{scroll-snap-type:x mandatory;display:flex;gap:14px;position:relative;margin:17px calc(-1 * var(--gutter)) 0;scroll-padding-inline:var(--gutter);padding:0 var(--gutter)}
+.vaccounts>div{flex:0 0 calc(100% - 14px);scroll-snap-align:start}
+.vacct,.vgoal{position:relative;border-radius:24px;background:var(--grey);padding:8px;overflow:hidden;min-height:100%}
+.vstrip{display:flex;align-items:center;gap:5px;width:100%;padding:10px 16px 21px;text-align:left;position:relative;min-height:60px;border-radius:18px 18px 0 0;background:linear-gradient(115deg,#bbef86,#a4ed70);color:#15250c;font-size:16px;font-weight:720}
+.vstrip:after{content:'';position:absolute;left:50%;bottom:-7px;transform:translateX(-50%) rotate(45deg);width:25px;height:25px;border-radius:0 0 10px 0;background:#b0ee7d}
+.vstrip .vmark{margin-left:auto}.vstrip svg{width:14px}
+.vmark{display:block;width:21px;height:22px;background:#15250d;clip-path:polygon(10% 0,100% 0,65% 100%,46% 100%,76% 18%,34% 18%,46% 36%,32% 50%,52% 50%,47% 66%,0 66%,23% 36%)}
+.vmain{position:relative;width:100%;padding:23px 8px 8px;text-align:left;display:grid;gap:2px}
+.vmain strong{font-size:23px;letter-spacing:-.045em}
+.vmain svg{position:absolute;right:9px;top:46%;width:15px;color:#656861}
+.vcurrencies{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 5px;margin:2px 6px 16px}
+.vcurrency{min-width:0;display:flex;align-items:center;gap:7px;height:46px;padding:0;text-align:left}
+.vcurrency b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.vcurrency svg{width:13px;margin-left:auto;margin-right:3px;color:#666}
+.vflag{font:normal 25px/1 "Apple Color Emoji","Segoe UI Emoji",sans-serif;display:inline-grid;place-items:center;width:27px;height:27px;overflow:hidden;border-radius:50%;flex:none}
+.vsmall{font-size:13px;min-height:30px;margin:0 8px 6px;background:#e1e2dd;color:#292e25}
+.vgoal{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:22px;gap:12px;background:#e5e8e1}
+.vdots{display:flex;justify-content:center;height:38px;align-items:center}.vdots button{width:17px;height:32px;padding:0;display:grid;place-items:center}.vdots i{width:7px;height:7px;border-radius:50%;background:#b8bbb5}.vdots .on i{background:var(--dark)}
+.vschedule,.vexplore,.vcalc,.vactivate{position:relative;border-radius:22px;overflow:hidden}
+.vschedule{background:#d9f5f0;padding:16px;color:#0d2725}
+.vschedule>div{display:flex;gap:13px;align-items:flex-start;padding-right:17px}
+.vschedule>div>svg{width:44px;height:44px;padding:10px;border:1px solid #9cbdb7;border-radius:50%}
+.vschedule small,.vrow small{display:block;font-size:13px;line-height:1.38;margin-top:3px}
+.vschedule>.vchip{width:100%;margin-top:12px;background:#07534e;color:white}
+.vschedule>.vbubble,.vexplore>.vbubble:first-child{position:absolute;right:7px;top:7px;width:25px;height:25px;background:#b9ded9}
+.vheading .vtext{padding:0;min-height:32px;background:none;text-decoration:underline}
+.vrow{width:100%;display:flex;align-items:center;gap:12px;text-align:left;min-height:67px;padding:10px 0}
+.vrow>span{min-width:0;flex:1}.vrow>span b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vrow>svg:last-child,.vwatch>svg{width:15px;margin-left:auto}
+.vrow .vleading{width:43px;height:43px;flex:none;border-radius:50%;display:grid;place-items:center;border:1px solid #d0d3cc;background:#fbfbf9;color:#141711;font-style:normal;font-weight:700}
+.vtx strong{max-width:46%;text-align:right;font-size:15px}.vcredit{color:#064d27}
+.vexplore{background:#173300;color:white;padding:23px;min-height:260px;isolation:isolate;display:flex;flex-direction:column;align-items:start}.vexplore h3{font:900 clamp(24px,7vw,37px)/.94 -apple-system,Arial,sans-serif;text-transform:uppercase;margin:0 18px 10px 0;letter-spacing:-.075em}.vexplore p{font-size:15px;margin:0;max-width:90%}.vexplore img{width:65%;margin:8px 0 -24px -23px}.vexplore .vbubble:last-child{position:absolute;bottom:10px;right:10px;background:var(--lime)}.vexplore>.vbubble:first-child{background:#30491f;color:white}
+.vcalc{background:#eeedea;padding:16px}.vcalc>svg{width:100%;height:90px}.vcalc>div{display:flex;align-items:stretch;gap:10px}.vcalc label{flex:1}.vcalc output{display:block;margin-top:5px;background:white;border-radius:8px;padding:12px;font-size:16px}
+.vdeck{position:relative;overflow:hidden;margin:0 calc(-1 * var(--gutter));height:auto;aspect-ratio:512/246;touch-action:pan-y}
+.vcardslide,.vqrslide{position:absolute;width:76%;height:100%;padding:0;top:0;transition:left .23s ease}
+.vcardslide{left:12%;border-radius:13px}.vcardslide img,.vlegacycard{width:100%;height:100%;display:block;border-radius:12px}
+.vlegacycard{background:linear-gradient(120deg,#b8f57c,#92e859);position:relative}
+.vlegacycard:after{content:'VISA';position:absolute;bottom:6%;right:7%;color:white;font-size:26px;font-weight:900;font-style:italic}
+.vqrslide{left:-70%;border-radius:8px;background:linear-gradient(#223914,#223914) left top/24px 3px no-repeat,linear-gradient(#223914,#223914) right bottom/24px 3px no-repeat,#e7ebe3;border-inline:3px solid #20390a}
+.showqr .vqrslide{left:-11%}.showqr .vcardslide{left:72%}.vqrslide svg{width:30px;height:30px}
+.vcardslide.isfrozen img{filter:grayscale(.8) brightness(.8)}.vcardslide>span{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#161a1add;color:white;border-radius:30px;padding:8px 14px}
+.vholder{text-align:center;margin:24px 0 38px;font-weight:680}
+.vcardactions{align-items:flex-start;justify-content:space-around;gap:4px;margin:0 -6px 28px}
+.vround{flex:1;display:grid;justify-items:center;gap:10px;padding:0;color:#143206;font-size:14px;font-weight:720}
+.vround i{width:clamp(51px,14vw,66px);height:clamp(51px,14vw,66px);border-radius:100%;display:grid;place-items:center}
+.vround svg{width:25px;height:25px}.vcardactions.solo{margin-top:26px}.vpartners{width:90%}
+.vwatch,.vactivate{width:100%;display:flex;align-items:center;gap:16px;text-align:left;padding:16px 5px}
+.vpay{border:1px solid #252825;padding:1px 3px;border-radius:3px;font-size:13px}
+.vactivate{margin:23px 0;background:#eeedea;padding:16px 12px;min-height:102px;border-radius:16px;font-size:15px;line-height:1.5}.vactivate img{width:30%;mix-blend-mode:multiply;align-self:flex-end}
+.vgroup{margin:30px 0 0;border-bottom:1px solid #dcddd9;padding-bottom:9px;font-size:14px}
+.vfilters{gap:5px;margin:13px 0 23px}.vfilters .vchip{min-height:31px;font-size:13px}.vfilters .vsearch{margin-left:auto;background:#efefed}.voutline{border:1px solid #67775f;background:transparent}.vselected{background:var(--dark);color:#fff}.v-recipients>small{display:block;margin-top:17px}.vempty{color:#64685f;font-size:15px}
+.v-payments h1{margin-top:50px}.vpayments{margin-top:15px;display:grid;gap:9px}.vpayments .vrow,.vaccountrow{padding:13px;background:#f3f2ef;border-radius:15px}.vaccountrow{margin:7px 0}
+.vaccbar{position:sticky;top:env(safe-area-inset-top);z-index:1;background:#fafafaf0;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);padding:1px 0 8px}
+.vsticky{position:absolute;left:50%;transform:translateX(-50%);opacity:0}.compact .vsticky{opacity:1}
+.vacchero{display:flex;flex-direction:column;align-items:center;gap:9px;margin:clamp(48px,8vh,86px) 0 29px;text-align:center}
+.vacchero>div{display:flex;align-items:center;gap:4px}.vacchero .vflag,.vbranddot{border-radius:50%;width:40px;height:40px;display:grid;place-items:center}.vacchero .vflag{font-size:39px;margin-left:-8px}.vacchero h1{font-size:clamp(36px,9vw,52px);margin:0 0 5px;overflow-wrap:anywhere}.vbranddot .vmark{width:17px;height:18px}.vacchero .vchip{max-width:100%;white-space:normal}
+.vseg{display:flex;background:#eaeaec;border-radius:23px;padding:2px;margin-bottom:15px}.vseg button{flex:1;border-radius:23px;min-height:38px;color:#193509;font-weight:700}.vseg .on{background:#fafafa}
+.personal .vdock{background:#f5f4f0c9;backdrop-filter:blur(17px) saturate(145%);-webkit-backdrop-filter:blur(17px) saturate(145%);border:1px solid #d2d3ca;width:min(90%,500px);border-radius:48px;color:#10120f;padding:3px;gap:0;bottom:max(9px,env(safe-area-inset-bottom));box-shadow:inset 0 1px 2px #fff,0 3px 16px #32362b14}
+.vdock button{min-width:0;min-height:55px;color:inherit;font-size:11px;font-weight:690;padding:5px 1px;border-radius:40px}.vdock svg{width:21px;height:21px}.vdock button span{font-size:11px;margin:2px 0 0}.vdock [aria-current]{background:#b8b8b26b}.personal .vaccdock{width:min(77%,420px);background:#a8f375db;color:#101b08}
+.personal .vmodal{padding:16px 22px calc(20px + env(safe-area-inset-bottom))}.vmodal header button{font-size:26px;width:44px;height:44px}.vmodal p{color:#41473b}.vmodal .vrow{min-height:47px}.vmodal .vleading{display:none}
+@media(prefers-reduced-motion:reduce){.vscreen *{transition:none!important;scroll-behavior:auto!important}}
