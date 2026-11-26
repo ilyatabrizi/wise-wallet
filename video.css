@@ -93,3 +93,16 @@
 .vdock button{min-width:0;min-height:55px;color:inherit;font-size:11px;font-weight:690;padding:5px 1px;border-radius:40px}.vdock svg{width:21px;height:21px}.vdock button span{font-size:11px;margin:2px 0 0}.vdock [aria-current]{background:#b8b8b26b}.personal .vaccdock{width:min(77%,420px);background:#a8f375db;color:#101b08}
 .personal .vmodal{padding:16px 22px calc(20px + env(safe-area-inset-bottom))}.vmodal header button{font-size:26px;width:44px;height:44px}.vmodal p{color:#41473b}.vmodal .vrow{min-height:47px}.vmodal .vleading{display:none}
 @media(prefers-reduced-motion:reduce){.vscreen *{transition:none!important;scroll-behavior:auto!important}}
+.v-home>.vtop,.v-cards>.vtop,.v-recipients>.vtop,.vtitlebar{position:sticky;top:env(safe-area-inset-top);z-index:2;background:#fafafaf0;backdrop-filter:blur(13px);-webkit-backdrop-filter:blur(13px)}
+.v-home>.vtop,.v-cards>.vtop,.v-recipients>.vtop{padding-block:6px;margin-block:-6px}
+.vtitlebar{min-height:35px;display:grid;place-items:center}
+.vtitlebar b{opacity:0}.vtitlebar.compact b{opacity:1}
+.v-payments h1{margin-top:10px}
+.vcalc .vquotes{display:grid;gap:5px;margin-top:12px}
+.vquotes label{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-direction:row-reverse;background:#fff;padding:4px 12px;border-radius:10px;margin:0}
+.vquotes input,.vquotes output{width:55%;border:0;background:white;text-align:left;padding:8px 0;margin:0;font-weight:700}
+.vcalc .vchartaxis,.vcalc .vquoteinfo{display:flex;justify-content:space-between;font-size:12px;color:#56594f}
+.vquoteinfo{margin:14px 0;text-align:center}.vquoteinfo span{flex:1}.vquoteinfo b{display:block;color:#222}
+.vcalc>.vchip{width:100%}.vprovided{margin:-10px 0 9px;font-size:13px}.vprotect{text-align:center;padding:26px 12px}.vprotect h3{margin:7px}.vprotect p{margin:5px 0 12px;font-size:14px}
+.v-home>.vtop:before,.v-cards>.vtop:before,.v-recipients>.vtop:before,.vaccbar:before,.vtitlebar:before{content:'';position:absolute;bottom:100%;left:calc(-1 * var(--gutter));right:calc(-1 * var(--gutter));height:env(safe-area-inset-top);background:#fafafa;pointer-events:none}
+.v-personal-splash{position:fixed;inset:0;display:grid;place-items:center;background:#9cf362;z-index:5;pointer-events:none;animation:vfade .48s ease-out forwards}.v-personal-splash .vmark{width:50px;height:52px}@keyframes vfade{0%,65%{opacity:1}100%{opacity:0}}

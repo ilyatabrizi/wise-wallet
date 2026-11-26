@@ -122,6 +122,9 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden&&cryptoKey&
 window.addEventListener('pagehide',()=>{if(cryptoKey&&!busy)lock()});
 applyAppearance();
 init();
+if((navigator.standalone||matchMedia('(display-mode: standalone)').matches)&&(personal||location.hash.startsWith('#look='))&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
+ const splash=document.createElement('div');splash.className='v-personal-splash';splash.setAttribute('aria-hidden','true');splash.innerHTML='<i class="vmark"></i>';document.body.append(splash);setTimeout(()=>splash.remove(),500);
+}
 function activateFromAddress(){if(location.hash.startsWith('#look='))openAppearanceLink(location.href,true)}
 activateFromAddress();
 window.addEventListener('hashchange',activateFromAddress);

@@ -63,8 +63,9 @@ function openPlans(title){
 }
 function goVideo(raw){
  const [action,id]=raw.split('/');
+ if(action==='cardFromHome'){viewState.cardFromHome=true;viewState.qr=false;goLook('cards');return}
  if(['home','cards','recipients','payments'].includes(action)){
-  if(action==='cards')viewState.qr=false;
+  if(action==='cards'){viewState.qr=false;viewState.cardFromHome=false}
   if(action==='home')viewState.homeSlide=0;
   goLook(action);return;
  }
@@ -85,7 +86,16 @@ function goVideo(raw){
  if(action==='fxentry'){const r=(wallet.fxEntries||[]).find(r=>r.id===id);if(r)optionsDialog(r.name,r.kind+' · '+number(r.amount)+' '+r.unit+' · '+r.date);return}
  if(action==='dismiss'||action==='restore'){editAction=action;recordId=id;save();return}
  if(action==='currencyBalance'){edit(viewState.accountUnit==='EUR'?'balance':'unitBalance',viewState.accountUnit);return}
+ if(action==='quoteSend'){
+  const euros=Number(document.querySelector('[data-calc]')?.value);
+  if(!Number.isFinite(euros)||euros<=.83){optionsDialog('Transfer calculator','Enter an amount above the example fee of €0.83.');return}
+  recordFlow('Expense','Record a simulated transfer');form.elements.amount.value=euros.toFixed(2);form.elements.name.value='Transfer to CAD';return;
+ }
  const choices={
+ returns:['Your returns','Track example investments and set your own savings goals.',[['wealth','View investments and goals']]],
+ rateUpdates:['Exchange rate updates','The calculator uses the example rate shown in the recording.',[['convert','Convert between local balances']]],
+ privacy:['Your wallet data','Entries stay on this device. You can protect them with a six-digit app PIN in Settings.',[['settings','Settings']]],
+ wisetag:['Your Wisetag',wallet.name,[['details','Edit cardholder']]],
  more:['Do more','',[['settings','Settings'],['wealth','Wealth & goals'],['unit/EUR','Main account'],['activity','All activity']]],
  cardPlus:['Your card','This wallet has one virtual card.',[['details','Edit card details'],['label','Change card label']]],
  cardControls:['Card controls','',[['freeze',wallet.frozen?'Unfreeze card':'Freeze card'],['limit','Spending limit'],['cardCode','Show virtual PIN']]],
