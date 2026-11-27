@@ -49,7 +49,8 @@ function home(){
  const balances=['EUR','AED','USD'].map(u=>control('unit/'+u,flag(u)+'<b>'+visibleAmount(unitCash(u),u,true)+'</b>'+svg('right'),'vcurrency')).join('');
  const tile='<div class="vacct"><button class="vstrip" data-v="cardFromHome">Your card '+svg('right')+'<i class="vmark"></i></button><button class="vmain" data-v="unit/EUR"><strong>Main account</strong><b>'+bal+'</b>'+svg('right')+'</button><div class="vcurrencies">'+balances+'</div>'+chip('accountInfo',svg('bank')+' Account details','vsmall')+'</div>';
  const schedule=wallet.hiddenPromos?.includes('schedule')?'':'<section class="vschedule">'+bubble('dismiss/schedule','close','Dismiss schedule offer')+'<div>'+svg('up')+'<span><b>Schedule a transfer</b><small>Get your money moving at a time of your choice.</small></span></div>'+chip('plan/Scheduled transfers','Schedule')+'</section>';
- const explore=wallet.hiddenPromos?.includes('explore')?'':'<h2>Explore</h2><section class="vexplore">'+bubble('dismiss/explore','close','Dismiss travel eSIM')+'<h3>The travel eSIM<br>has landed</h3><p>Get reliable data in over 150 destinations from the moment you arrive.</p>'+(film('explore')?'<img alt="" src="'+film('explore')+'">':'')+bubble('travel','right','Explore travel hub')+'</section>';
+ const headline=film('travelHeadline')?'<h3 class="has-art"><img src="'+film('travelHeadline')+'" alt="The travel eSIM has landed"></h3>':'<h3>The travel eSIM<br>has landed</h3>';
+ const explore=wallet.hiddenPromos?.includes('explore')?'':'<h2>Explore</h2><section class="vexplore">'+bubble('dismiss/explore','close','Dismiss travel eSIM')+headline+'<p>Get reliable data in over 150 destinations from the moment you arrive.</p>'+(film('explore')?'<img alt="" src="'+film('explore')+'">':'')+bubble('travel','right','Explore travel hub')+'</section>';
  return videoTop(control('settings',esc(initials(wallet.name)),'vavatar','Settings'),chip('refer','Earn €100','vgreen')+chip('more','Do more '+svg('plus'),'vsurface'))+'<div class="vbalance"><b>Total balance</b><div><strong>'+eur+'</strong>'+bubble('hide','eye',concealed?'Show balance':'Hide balance')+bubble('wealth','chart','View wealth')+'</div></div><div class="vactions">'+chip('expense','Send','vgreen')+chip('income','Add money')+chip('request','Request')+chip('upload',svg('qr')+' Upload')+'</div><div class="vaccounts" aria-label="Accounts"><div>'+tile+'</div><div><section class="vgoal"><strong>Savings goals</strong>'+chip('wealth','View goals')+'</section></div></div><div class="vdots">'+[0,1].map(i=>control('slide/'+i,'<i></i>',viewState.homeSlide===i?'on':'','Show '+(i?'goals':'account'))).join('')+'</div>'+schedule+'<div class="vheading"><h2>Transactions</h2>'+chip('unit/EUR','See all','vtext')+'</div>'+txList('EUR',3)+'<div class="vheading"><h2>Your returns</h2>'+chip('returns','Explore','vtext')+'</div><p class="vprovided">Provided by Wise Assets Europe</p>'+vRow('returns','chart','Start earning a return','Explore example returns on your balances.')+explore+'<h2>Transfer calculator</h2>'+calculator();
 }
 function calculator(){return '<div class="vcalc"><svg viewBox="0 0 320 96" role="img" aria-label="Illustrative exchange rate chart"><path fill="none" stroke="#173606" stroke-width="2" d="m0 83 18-3 12 4 12-15 23-2 9-12 20 1 7-26 16 1 17 26 21 1 13 5 21-5 8 2 15-4 26 2 7 16 9-3 11 5 25-4 8 5"/></svg><div class="vchartaxis"><span>27 Oct</span><span>Today</span></div><small>1 EUR = 1.5611 CAD · Example rate</small><div class="vquotes"><label>You send · EUR<input data-calc type="number" step=".01" min="0" value="16" inputmode="decimal"></label><label>Recipient gets · CAD<output id="vconverted">23.68</output></label></div><div class="vquoteinfo"><span>Includes fees<b>0.83 EUR</b></span><span>Should arrive<b>By Friday</b></span></div>'+chip('quoteSend','Send','vgreen')+'</div>'+vRow('rateUpdates','chart','Get exchange rate updates')+'<div class="vprotect">'+svg('lock')+'<h3>Your money, protected</h3><p>Learn how your personal wallet stores its data.</p>'+chip('privacy','Learn more')+'</div>'}
@@ -72,6 +73,8 @@ function account(){
 }
 function renderVideoWallet(){
  if(!personal||tab!=='Wallet')return false;
+ const oldDeck=app.querySelector('.vdeck');
+ const previousPositions=oldDeck&&customPage==='cards'&&oldDeck.classList.contains('showqr')!==viewState.qr?Array.from(oldDeck.children,el=>el.getBoundingClientRect().left):null;
  const pages={home,cards,recipients,payments,account};
  app.innerHTML='<div class="vscreen v-'+esc(customPage)+'">'+(pages[customPage]||home)()+'</div>'+navVideo();
  if(customPage==='home'){
@@ -80,13 +83,50 @@ function renderVideoWallet(){
  carousel.onscroll=()=>{viewState.homeSlide=Number(carousel.scrollLeft>carousel.clientWidth*.45);app.querySelectorAll('.vdots button').forEach((b,i)=>b.classList.toggle('on',i===viewState.homeSlide))};
  }
  if(customPage==='account')updateCompact();
+ if(previousPositions&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
+  Array.from(app.querySelector('.vdeck').children).forEach((slide,i)=>{
+   const distance=previousPositions[i]-slide.getBoundingClientRect().left;
+   slide.animate([{transform:'translateX('+distance+'px)'},{transform:'translateX(0)'}],{duration:260,easing:'cubic-bezier(.2,.75,.2,1)'});
+  });
+ }
  return true;
 }
 function updateCompact(){app.querySelector('.vaccbar')?.classList.toggle('compact',scrollY>110);app.querySelector('.vtitlebar')?.classList.toggle('compact',scrollY>48)}
 window.addEventListener('scroll',updateCompact,{passive:true});
-let touchStart;
-document.addEventListener('touchstart',e=>{touchStart=e.target.closest('.vdeck')?[e.touches[0].clientX,e.touches[0].clientY]:null},{passive:true});
-document.addEventListener('touchend',e=>{if(!touchStart)return;const dx=e.changedTouches[0].clientX-touchStart[0],dy=e.changedTouches[0].clientY-touchStart[1];touchStart=null;if(Math.abs(dx)>35&&Math.abs(dx)>Math.abs(dy)){viewState.qr=dx>0;render()}},{passive:true});
+let deckDrag=null;
+document.addEventListener('pointerdown',e=>{
+ const deck=e.target.closest('.vdeck');
+ if(!deck||!e.isPrimary||e.button!==0)return;
+ deckDrag={deck,id:e.pointerId,x:e.clientX,y:e.clientY,active:false};
+});
+document.addEventListener('pointermove',e=>{
+ if(!deckDrag||e.pointerId!==deckDrag.id)return;
+ const dx=e.clientX-deckDrag.x,dy=e.clientY-deckDrag.y;
+ if(!deckDrag.active){
+  if(Math.abs(dy)>8&&Math.abs(dy)>Math.abs(dx)){deckDrag=null;return}
+  if(Math.abs(dx)<8)return;
+  deckDrag.active=true;deckDrag.deck.setPointerCapture(e.pointerId);
+ }
+ const max=deckDrag.deck.clientWidth*.6;
+ const distance=viewState.qr?Math.max(-max,Math.min(0,dx)):Math.min(max,Math.max(0,dx));
+ for(const slide of deckDrag.deck.children)slide.style.transform='translateX('+distance+'px)';
+});
+function finishDeckDrag(e){
+ if(!deckDrag||e.pointerId!==deckDrag.id)return;
+ const drag=deckDrag;deckDrag=null;
+ if(!drag.active)return;
+ const dx=e.clientX-drag.x;
+ if(e.type==='pointerup'&&Math.abs(dx)>35&&viewState.qr!==(dx>0)){
+  viewState.qr=dx>0;render();
+ }else{
+  for(const slide of drag.deck.children){
+   const previous=slide.style.transform;slide.style.transform='';
+   if(!matchMedia('(prefers-reduced-motion: reduce)').matches)slide.animate([{transform:previous},{transform:'translateX(0)'}],{duration:160,easing:'ease-out'});
+  }
+ }
+}
+document.addEventListener('pointerup',finishDeckDrag);
+document.addEventListener('pointercancel',finishDeckDrag);
 document.addEventListener('input',e=>{
  if(e.target.matches('[data-calc]'))$('#vconverted').textContent=(Math.max(0,(Number(e.target.value)||0)-.83)*1.5611).toLocaleString('en-IE',{minimumFractionDigits:2,maximumFractionDigits:2});
  if(e.target.id==='vsearch'){viewState.search=e.target.value;const pos=e.target.selectionStart;render();const field=$('#vsearch');field.focus();if(pos!==null)field.setSelectionRange(pos,pos)}

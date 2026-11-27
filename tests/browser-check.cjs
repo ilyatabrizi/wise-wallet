@@ -7,10 +7,10 @@ const [dir,driver]=process.argv.slice(2);
 const {webkit,chromium}=require(driver);
 const walletDir=path.join(dir,'wallet');
 const dataUri='data:image/png;base64,'+fs.readFileSync(path.join(walletDir,'icon.png')).toString('base64');
-const pack={format:'personal-wallet-2',icon:dataUri,film:Object.fromEntries(['card','lock','explore','partners'].map(k=>[k,dataUri]))};
+const pack={format:'personal-wallet-2',artRevision:3,icon:dataUri,film:Object.fromEntries(['card','lock','explore','partners','launchMark','launchRibbon','travelHeadline'].map(k=>[k,dataUri]))};
 const key=crypto.randomBytes(32),iv=crypto.randomBytes(12),aes=crypto.createCipheriv('aes-256-gcm',key,iv);
-fs.writeFileSync(path.join(walletDir,'personal-layout-v2.bin'),Buffer.concat([iv,aes.update(JSON.stringify(pack)),aes.final(),aes.getAuthTag()]));
-const types={'.js':'application/javascript','.css':'text/css','.html':'text/html','.webmanifest':'application/manifest+json','.png':'image/png','.svg':'image/svg+xml'};
+fs.writeFileSync(path.join(walletDir,'personal-layout-v3.bin'),Buffer.concat([iv,aes.update(JSON.stringify(pack)),aes.final(),aes.getAuthTag()]));
+const types={'.js':'application/javascript','.css':'text/css','.html':'text/html','.webmanifest':'application/manifest+json','.png':'image/png','.svg':'image/svg+xml','.woff2':'font/woff2'};
 let originAvailable=true;
 const srv=http.createServer((req,res)=>{
  if(!originAvailable){req.socket.destroy();return}
@@ -34,6 +34,16 @@ async function test(engine,base){
  const expectText=async(sel,part)=>{await page.waitForFunction(({sel,part})=>document.querySelector(sel)?.textContent.includes(part),{sel,part},{timeout:7000})};
  await page.goto(url);
  await expectText('.vbalance','130.38 EUR');
+ await page.waitForFunction(()=>!document.documentElement.classList.contains('wallet-opening'));
+ assert(await page.evaluate(async()=>{
+  await document.fonts.ready;
+  return Array.from(document.fonts).some(f=>f.family.includes('Wallet Inter')&&f.status==='loaded')&&getComputedStyle(document.querySelector('.vbalance strong')).fontFamily.includes('Wallet Inter');
+ }));
+ const zoom=await page.evaluate(()=>{
+  const allowed=count=>{const e=new Event('touchmove',{bubbles:true,cancelable:true});Object.defineProperty(e,'touches',{value:Array(count).fill({})});return document.body.dispatchEvent(e)};
+  return [document.querySelector('meta[name=viewport]').content.includes('user-scalable=no'),allowed(1),allowed(2),document.body.dispatchEvent(new Event('gesturestart',{bubbles:true,cancelable:true})),visualViewport.scale];
+ });
+ assert.deepEqual(zoom,[true,true,false,false,1]);
  await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
  await page.waitForFunction(()=>document.querySelector('link[rel=apple-touch-icon]').href.startsWith('data:image/png;base64,'));
  const installed=await page.evaluate(async()=>{
@@ -44,13 +54,16 @@ async function test(engine,base){
  });
  assert.equal(installed.manifest.start_url,url);
  assert.equal(installed.manifest.id,base);
+ assert.equal(installed.manifest.display,'standalone');
  assert.deepEqual(Buffer.from(installed.bytes),fs.readFileSync(path.join(walletDir,'icon.png')));
  await view('settings');await click('[data-act="balance"]');await edit('[name=amount]','7500');await save();
  await click('[data-tab="Wallet"]');await expectText('.vbalance','7,500.00 EUR');
  await view('cards');await view('freeze');await expectText('.vholder + div','Unfreeze card');
  await view('cardCode');await expectText('.notice','0000');await click('.notice button');
  await view('qr');await expectText('.v-cards h1','Pay with QR code');await view('cardface');await expectText('.v-cards h1','Cards');
- await view('recipients');await view('person/new');await edit('[name=name]','Test recipient');await save();await view('search');
+ await view('recipients');await page.locator('.wallet-load-track').waitFor();
+ await view('payments');await view('recipients');await page.locator('.v-recipients[aria-busy=true]').waitFor();
+ await view('person/new');await edit('[name=name]','Test recipient');await save();await view('search');
  await page.locator('#vsearch').fill('Test recipient');await expectText('.v-recipients','Test recipient');
  assert.equal(await page.locator('.v-recipients .vrow').count(),2);
  await view('payments');await view('request');await edit('[name=name]','Practice request');await edit('[name=amount]','22.50');await save();
@@ -63,8 +76,9 @@ async function test(engine,base){
  originAvailable=false;await page.reload();await expectText('.vbalance','7,500.00 EUR');
  await view('cards');await expectText('.vcardactions','Unfreeze card');
  originAvailable=true;
- const fresh=await browser.newContext({viewport:{width:320,height:650},isMobile:true});
+ const fresh=await browser.newContext({viewport:{width:320,height:650},isMobile:true,reducedMotion:'reduce'});
  const second=await fresh.newPage();await second.goto(installed.manifest.start_url);await second.locator('.v-home').waitFor();
+ await second.locator('nav [data-v=cards]').click();await second.locator('.v-cards').waitFor();assert.equal(await second.locator('.wallet-load-track').count(),0);
  assert(await second.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
  await fresh.close();
  await view('home');await view('settings');await click('[data-act="pin"]');await edit('[name=pin]','123456');await edit('[name=confirm]','123456');await save();

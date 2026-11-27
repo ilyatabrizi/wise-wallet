@@ -41,6 +41,7 @@ function holdingRows(){return wallet.holdings.map(r=>row(r.name,r.kind,money(r.a
 function goalRows(){return wallet.goals.map(r=>'<div class="panel">'+row(r.name,'Net worth target',money(r.amount),'goals/'+r.id)+track(worth(),r.amount)+'<small class="sub">'+Math.max(0,Math.floor(worth()/r.amount*100))+'% reached</small></div>').join('')||'<p class="empty">Add a goal to track your progress.</p>'}
 function settings(){return '<h1>Settings</h1>'+row('Available balance','Set the current cash balance',money(cash()),'balance')+row('Card details',wallet.name,'•• '+esc(wallet.last),'details')+row('Monthly limit','Spending target',money(wallet.limit),'limit')+row('App PIN',cryptoKey?'Enabled · change or remove':'Optional six-digit lock','›','pin')+'<div class="sectionhead"><h2>Transactions</h2>'+btn('Add transaction','entries/new','smallBtn')+'</div>'+entries()+'<div class="sectionhead"><h2>Assets & investments</h2>'+btn('Add holding','holdings/new','smallBtn')+'</div>'+holdingRows()+'<div class="sectionhead"><h2>Goals</h2>'+btn('Add goal','goals/new','smallBtn')+'</div>'+goalRows()+'<p class="sub">Personal simulation · Fictional euro amounts. Changes are saved on this device.</p>'}
 function render(){
+ walletMotion.clear();
  const pages={Wallet:dashboard,Wealth:wealth,Settings:settings,Activity:()=>'<h1>Activity</h1><div class="stats">'+stat('Total income',sum(wallet.entries.filter(r=>r.kind==='Income')))+stat('Total expenses',sum(wallet.entries.filter(r=>r.kind==='Expense')))+'</div><div class="sectionhead"><h2>Transactions</h2>'+btn('Add entry','entries/new','smallBtn')+'</div>'+entries()};
  applyAppearance();
  if(renderVideoWallet())return;
@@ -74,6 +75,8 @@ async function unlock(pin){
  return {data:JSON.parse(new TextDecoder().decode(bytes)),k,s:stored.salt};
 }
 function lock(){
+ walletMotion.clear();
+ pageOffsets.clear();
  wallet=null;cryptoKey=null;salt=null;tab='Wallet';customPage='home';viewState.search='';document.querySelectorAll('dialog[open]').forEach(d=>d.close());$('#fields').replaceChildren();
  app.innerHTML=mast+'<form class="lockbox" id="unlock"><h1>Welcome back</h1>'+pinInput('Wallet PIN','pin')+'<p class="err" role="alert"></p><button class="primary">Unlock wallet</button></form>';
  $('#unlock').onsubmit=async e=>{e.preventDefault();const f=e.currentTarget;try{const u=await unlock(f.pin.value);if(document.hidden)return;wallet=u.data;cryptoKey=u.k;salt=u.s;render()}catch{f.querySelector('.err').textContent='Could not unlock. Check your PIN.'}};
@@ -122,11 +125,12 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden&&cryptoKey&
 window.addEventListener('pagehide',()=>{if(cryptoKey&&!busy)lock()});
 applyAppearance();
 init();
-if((navigator.standalone||matchMedia('(display-mode: standalone)').matches)&&(personal||location.hash.startsWith('#look='))&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
- const splash=document.createElement('div');splash.className='v-personal-splash';splash.setAttribute('aria-hidden','true');splash.innerHTML='<i class="vmark"></i>';document.body.append(splash);setTimeout(()=>splash.remove(),500);
+function activateFromAddress(){
+ if(location.hash.startsWith('#look='))return openAppearanceLink(location.href,true);
+ const stored=localStorage.getItem(appearanceKey+':activation');
+ if(personal&&personal.artRevision!==3&&stored)return openAppearanceLink(new URL('./',location.href).href+'#look='+stored,true,true);
 }
-function activateFromAddress(){if(location.hash.startsWith('#look='))openAppearanceLink(location.href,true)}
-activateFromAddress();
+walletMotion.launch(activateFromAddress());
 window.addEventListener('hashchange',activateFromAddress);
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>console.warn('Offline setup unavailable.'));
 

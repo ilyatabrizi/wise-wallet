@@ -13,12 +13,12 @@ jobs:
       - name: Make an isolated site and run mobile browser tests
         run: |
           mkdir -p /tmp/wallet-site/wallet
-          cp *.js *.css *.html *.webmanifest *.svg *.png /tmp/wallet-site/wallet/
+          cp *.js *.css *.html *.webmanifest *.svg *.png *.woff2 /tmp/wallet-site/wallet/
           node tests/browser-check.cjs /tmp/wallet-site /tmp/wallet-check/node_modules/playwright
       - name: Verify the published Pages files
         if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
         run: |
-          for asset in index.html install.html install.webmanifest manifest.webmanifest sw.js install-identity.js appearance.js app.js video.js video.css wallet-controls.js personal-layout-v2.bin; do
+          for asset in index.html install.html install.webmanifest manifest.webmanifest sw.js install-identity.js appearance.js app.js video.js video.css wallet-controls.js mobile.js mobile.css inter-latin.woff2 personal-layout-v3.bin; do
             curl --fail --silent --show-error --retry 3 "https://${GITHUB_REPOSITORY_OWNER}.github.io/wise-wallet/${asset}?build=${GITHUB_SHA}" -o /tmp/published-file
             cmp "$asset" /tmp/published-file
           done

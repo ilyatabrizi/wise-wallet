@@ -1,0 +1,73 @@
+@font-face{
+ font-family:Wallet Inter;
+ src:url("./inter-latin.woff2") format("woff2");
+ font-display:swap;
+ font-style:normal;
+ font-weight:100 900;
+}
+html{touch-action:pan-x pan-y;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{touch-action:pan-x pan-y;overscroll-behavior-x:none}
+button,a,input,select,textarea{touch-action:manipulation}
+input:not([type=range]),select,textarea,.vcalc input{font-size:max(16px,1em)}
+.personal,.personal #app,.personal dialog,.personal .vscreen,.personal .vscreen button,.personal nav,.personal header h2,.personal #app h1,.personal #app h2,.personal .vmodal h2{
+ font-family:"Wallet Inter",-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;
+ font-optical-sizing:auto;font-synthesis:none
+}
+.personal .vscreen{font-weight:450;line-height:1.40;letter-spacing:-.015em}
+.personal .vscreen h1{font-weight:660;letter-spacing:-.042em;line-height:1.14}
+.personal .vscreen h2,.personal .vmain strong{font-weight:650;letter-spacing:-.037em}
+.personal .vbalance>b,.personal .vmain>b,.personal .vcurrency b,.personal .vacchero b,.personal .vholder{font-weight:550}
+.personal .vbalance strong,.personal .vacchero h1{font-weight:650;letter-spacing:-.042em}
+.personal .vchip,.personal .vstrip,.personal .vround,.personal .vseg button{font-weight:615;letter-spacing:-.028em}
+.personal .vrow b,.personal .vtx strong,.personal .vwatch b{font-weight:615}
+.personal .vrow small,.personal .vschedule small{font-weight:450;letter-spacing:-.013em}
+.personal .vdock button span{font-size:11px;font-weight:640;letter-spacing:.005em}
+.personal .vacchero h1{font-size:clamp(36px,10.2vw,54px)}
+.personal .vcardactions{justify-content:space-between}
+.personal .v-payments .vpayments .vrow{border:1px dashed #e2e2df;background:#fbfbf9}
+.personal .v-payments .vpayments .vrow:first-child,.personal .vaccountrow{background:#eeecea;border-color:transparent}
+.personal .vstrip:after{width:32px;height:13px;bottom:-12px;border-radius:0 0 50% 50%;transform:translateX(-50%);background:#afee7c}
+.personal .vexplore h3.has-art{margin:0 38px 10px 0}
+.personal .vexplore h3 img{display:block;width:min(100%,320px);height:auto;margin:0}
+.personal .v-cards .vdeck{filter:drop-shadow(0 7px 10px #214d1110)}
+.personal :is(.vsurface,.vavatar,.vchip,.vbubble,.vround,.vdock button){transition:transform .13s ease,background-color .18s ease}
+.personal :is(.vsurface,.vavatar,.vchip,.vbubble,.vround,.vdock button):active{transform:scale(.97)}
+#launch-cover{display:none}
+html.wallet-opening,html.wallet-opening body{background:#94ed67}
+html.wallet-opening #launch-cover{
+ display:grid;position:fixed;inset:0;z-index:30;place-items:center;background:#94ed67;overflow:hidden;isolation:isolate
+}
+.launch-mark{
+ width:min(21vw,115px);aspect-ratio:111/106;display:grid;place-items:center;
+ background:var(--art,none) center/contain no-repeat
+}
+.launch-mark:not([style])::before{content:"";background:#183204;width:96%;height:95%;clip-path:polygon(10% 0,100% 0,65% 100%,45% 100%,75% 18%,34% 18%,46% 36%,32% 50%,52% 50%,47% 66%,0 66%,23% 36%)}
+.launch-tail,.launch-ribbon{
+ position:absolute;top:100%;width:min(28.6vw,166px);height:115%;left:50%;
+ border-radius:999px 999px 0 0 / min(14.3vw,83px) min(14.3vw,83px) 0 0;transform:translateX(-50%);will-change:transform
+}
+.launch-tail{background:#183300}
+.launch-ribbon{
+ background-image:var(--art,linear-gradient(150deg,#82d5c3 3%,#9394c5 19%,#b347ba 37%,#e12989 56%,#9534ad 74%));
+ background-size:100% auto;background-repeat:repeat-y
+}
+.launch-ribbon:not([style])::before{content:'↑';position:absolute;top:2%;left:7%;width:86%;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;background:#94ed67;font:400 9vw/1 system-ui}
+.wallet-departing .launch-tail{animation:launch-tail-rise .79s linear both}
+.wallet-departing .launch-ribbon{animation:launch-ribbon-rise .79s linear both}
+.wallet-departing .launch-mark{animation:launch-mark-out .79s linear both}
+html.wallet-departing #launch-cover{animation:launch-crossfade .79s linear both}
+@keyframes launch-tail-rise{0%{transform:translate(-50%,0)}40%{transform:translate(-50%,-27dvh)}65%{transform:translate(-50%,-48dvh)}100%{transform:translate(-50%,-110dvh)}}
+@keyframes launch-ribbon-rise{0%,10%{transform:translate(-50%,0)}42%{transform:translate(-50%,-19dvh)}63%{transform:translate(-50%,-43dvh)}78%{transform:translate(-50%,-67dvh) scaleX(1.13)}100%{transform:translate(-50%,-106dvh) scaleX(1.46)}}
+@keyframes launch-mark-out{0%,55%{opacity:1}74%,100%{opacity:0}}
+@keyframes launch-crossfade{0%,75%{opacity:1}100%{opacity:0}}
+.wallet-load-track{
+ position:fixed;z-index:2;top:calc(env(safe-area-inset-top) + 8px);left:50%;transform:translateX(-50%);
+ width:min(calc(100% - 32px),534px);height:4px;border-radius:10px;overflow:hidden;background:#dededb;pointer-events:none
+}
+.wallet-load-track i{display:block;height:100%;width:100%;transform-origin:left;border-radius:inherit;background:repeating-linear-gradient(118deg,#1b5716 0 5px,#538234 7px,#214b13 10px);animation:wallet-progress var(--load-time) cubic-bezier(.35,.04,.2,1) both}
+.wallet-load-track.track-done{opacity:0;transition:opacity .15s ease}
+.page-waiting{opacity:0;pointer-events:none}
+.page-appearing{animation:wallet-reveal .16s ease-out both}
+@keyframes wallet-progress{from{transform:scaleX(.015)}to{transform:scaleX(1)}}
+@keyframes wallet-reveal{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.personal *,.wallet-opening *{scroll-behavior:auto!important}.personal :is(.vsurface,.vavatar,.vchip,.vbubble,.vround,.vdock button){transition:none}.page-appearing{animation:none}}
