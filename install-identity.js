@@ -9,6 +9,6 @@ function applyInstallIdentity(){
  identityToken=token;
  const launch=new URL('install.html',installRoot);
  if(key)launch.hash='look='+key;
- const manifest={id:installRoot.href,start_url:launch.href,scope:installRoot.href,name:'Wise Wallet',short_name:'Wise',display:'standalone',theme_color:'#fafafa',background_color:'#fafafa',icons:[{src:personal.icon,sizes:'any',type:'image/png',purpose:'any'}]};
+ const manifest={id:installRoot.href,start_url:launch.href,scope:installRoot.href,name:'Wise Wallet',short_name:'Wise',display:'standalone',theme_color:'#fafafa',background_color:'#94ed67',icons:[{src:personal.icon,sizes:'any',type:'image/png',purpose:'any'}]};
  document.querySelector('link[rel=manifest]').href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(manifest));
 }

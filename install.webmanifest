@@ -4,6 +4,6 @@
   "short_name": "Wise",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#fafafa",
+  "background_color": "#94ed67",
   "theme_color": "#fafafa"
 }

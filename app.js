@@ -14,13 +14,14 @@ let wallet, cryptoKey, salt, tab=new URLSearchParams(location.search).has('setup
 const encoder = new TextEncoder();
 const to64 = bytes => btoa(Array.from(new Uint8Array(bytes),n=>String.fromCharCode(n)).join(''));
 const from64 = s => Uint8Array.from(atob(s),c=>c.charCodeAt(0));
-async function derive(pin,saltValue){
+async function derive(pin,saltValue,extractable=false){
  const material=await crypto.subtle.importKey('raw',encoder.encode(pin),'PBKDF2',false,['deriveKey']);
- return crypto.subtle.deriveKey({name:'PBKDF2',hash:'SHA-256',salt:from64(saltValue),iterations:310000},material,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+ return crypto.subtle.deriveKey({name:'PBKDF2',hash:'SHA-256',salt:from64(saltValue),iterations:310000},material,{name:'AES-GCM',length:256},extractable,['encrypt','decrypt']);
 }
-async function persist(data,k=cryptoKey,s=salt){
+let biometric=null;
+async function persist(data,k=cryptoKey,s=salt,bio=biometric){
  let stored={data};
- if(k){const iv=crypto.getRandomValues(new Uint8Array(12));const bytes=await crypto.subtle.encrypt({name:'AES-GCM',iv},k,encoder.encode(JSON.stringify(data)));stored={salt:s,iv:to64(iv),cipher:to64(bytes)}}
+ if(k){const iv=crypto.getRandomValues(new Uint8Array(12));const bytes=await crypto.subtle.encrypt({name:'AES-GCM',iv},k,encoder.encode(JSON.stringify(data)));stored={salt:s,bio,iv:to64(iv),cipher:to64(bytes)}}
  localStorage.setItem(keyName,JSON.stringify(stored));
 }
 const cash = () => wallet.opening+wallet.entries.reduce((v,r)=>v+(r.kind==='Income'?r.amount:-r.amount),0);
@@ -39,7 +40,7 @@ function dashboard(){return '<h1>My wallet</h1><div class="hero"><p class="kicke
 function wealth(){return '<h1>My wealth</h1><div class="hero"><p class="kicker">Net worth</p><b class="money">'+money(worth())+'</b></div><div class="stats">'+stat('Cash',cash())+stat('Investments',sum(wallet.holdings.filter(r=>r.kind==='Investment')))+stat('Other assets',sum(wallet.holdings.filter(r=>r.kind==='Asset')))+stat('Liabilities',sum(wallet.holdings.filter(r=>r.kind==='Liability')))+'</div><div class="sectionhead"><h2>Holdings</h2>'+btn('Add holding','holdings/new','smallBtn')+'</div>'+holdingRows()+'<div class="sectionhead"><h2>Net worth goals</h2>'+btn('Add goal','goals/new','smallBtn')+'</div>'+goalRows()}
 function holdingRows(){return wallet.holdings.map(r=>row(r.name,r.kind,money(r.amount),'holdings/'+r.id)).join('')||'<p class="empty">Your holdings will appear here.</p>'}
 function goalRows(){return wallet.goals.map(r=>'<div class="panel">'+row(r.name,'Net worth target',money(r.amount),'goals/'+r.id)+track(worth(),r.amount)+'<small class="sub">'+Math.max(0,Math.floor(worth()/r.amount*100))+'% reached</small></div>').join('')||'<p class="empty">Add a goal to track your progress.</p>'}
-function settings(){return '<h1>Settings</h1>'+row('Available balance','Set the current cash balance',money(cash()),'balance')+row('Card details',wallet.name,'•• '+esc(wallet.last),'details')+row('Monthly limit','Spending target',money(wallet.limit),'limit')+row('App PIN',cryptoKey?'Enabled · change or remove':'Optional six-digit lock','›','pin')+'<div class="sectionhead"><h2>Transactions</h2>'+btn('Add transaction','entries/new','smallBtn')+'</div>'+entries()+'<div class="sectionhead"><h2>Assets & investments</h2>'+btn('Add holding','holdings/new','smallBtn')+'</div>'+holdingRows()+'<div class="sectionhead"><h2>Goals</h2>'+btn('Add goal','goals/new','smallBtn')+'</div>'+goalRows()+'<p class="sub">Personal simulation · Fictional euro amounts. Changes are saved on this device.</p>'}
+function settings(){return '<h1>Settings</h1>'+row('Available balance','Set the current cash balance',money(cash()),'balance')+row('Card details',wallet.name,'•• '+esc(wallet.last),'details')+row('Monthly limit','Spending target',money(wallet.limit),'limit')+row('Face ID',biometric?'Enabled · manage':'Unlock with an iPhone passkey','›','face')+row('App PIN',cryptoKey?'Enabled · change or remove':'Optional six-digit lock','›','pin')+'<div class="sectionhead"><h2>Transactions</h2>'+btn('Add transaction','entries/new','smallBtn')+'</div>'+entries()+'<div class="sectionhead"><h2>Assets & investments</h2>'+btn('Add holding','holdings/new','smallBtn')+'</div>'+holdingRows()+'<div class="sectionhead"><h2>Goals</h2>'+btn('Add goal','goals/new','smallBtn')+'</div>'+goalRows()+'<p class="sub">Personal simulation · Fictional euro amounts. Changes are saved on this device.</p>'}
 function render(){
  walletMotion.clear();
  const pages={Wallet:dashboard,Wealth:wealth,Settings:settings,Activity:()=>'<h1>Activity</h1><div class="stats">'+stat('Total income',sum(wallet.entries.filter(r=>r.kind==='Income')))+stat('Total expenses',sum(wallet.entries.filter(r=>r.kind==='Expense')))+'</div><div class="sectionhead"><h2>Transactions</h2>'+btn('Add entry','entries/new','smallBtn')+'</div>'+entries()};
@@ -49,7 +50,27 @@ function render(){
  app.innerHTML=mast+(tab==='Settings'?content.replace('<h1>Settings</h1>','<h1>Settings</h1>'+extraSettings())+appearanceControls():content)+nav();
 }
 function input(label,name,value='',options=''){return '<label>'+label+'<input name="'+name+'" value="'+esc(value)+'" required '+options+'></label>'}
-const amountInput=(label,value,min=0)=>input(label,'amount',(value/100).toFixed(2),'type="number" inputmode="decimal" step=".01" min="'+min+'" max="999999999999"');
+function parseAmount(raw,min=0){
+ const value=String(raw).trim().replace(/[۰-۹]/g,c=>c.charCodeAt(0)-1776).replace(/[٠-٩]/g,c=>c.charCodeAt(0)-1632).replace(/[٫,]/g,'.');
+ if(!/^-?(?:\d+(?:\.\d{0,2})?|\.\d{1,2})$/.test(value))throw Error('Enter an amount with up to two decimal places, such as 1250.75.');
+ const [whole,fraction='']=value.replace('-','').split('.');
+ const cents=(Number(whole||0)*100+Number(fraction.padEnd(2,'0')))*(value.startsWith('-')?-1:1);
+ if(!Number.isSafeInteger(cents)||cents<Math.round(min*100)||Math.abs(cents)>99999999999999)throw Error('Enter an amount within the allowed range.');
+ return cents;
+}
+const amountInput=(label,value,min=0)=>input(label,'amount',value===0&&min>0?'':(value/100).toFixed(2),'type="text" inputmode="decimal" placeholder="0.00" autocomplete="off" data-min="'+min+'"')+'<small class="amount-preview" aria-live="polite"></small>';
+function previewAmount(){
+ const field=form.elements.amount;if(!field)return;
+ const hint=form.querySelector('.amount-preview');if(!hint)return;
+ try{
+  const n=parseAmount(field.value,Number(field.dataset.min));
+  const u=editAction==='unitBalance'||editAction==='fxMove'?recordId:'EUR';
+  const fmt=v=>new Intl.NumberFormat('en-IE',{style:'currency',currency:['USD','AED'].includes(u)?u:'EUR'}).format(v/100);
+  const delta=editAction==='entries'&&recordId==='new'?(form.elements.kind.value==='Income'?n:-n):null;
+  hint.textContent=delta===null?fmt(n):'Balance after saving: '+fmt(cash()+delta);
+ }catch{hint.textContent='Use up to two decimal places.'}
+}
+form.addEventListener('input',previewAmount);
 const textInput=(label,value)=>input(label,'name',value,'maxlength="48"');
 const select=(label,options,value)=>'<label>'+label+'<select name="kind">'+options.map(s=>'<option '+(s===value?'selected':'')+'>'+s+'</option>').join('')+'</select></label>';
 const pinInput=(label,name)=>input(label,name,'','type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="off"');
@@ -64,13 +85,17 @@ function edit(action,id){
  entries:()=>[r?'Edit transaction':'Add transaction',textInput('Description',r?.name||'')+select('Type',['Income','Expense'],r?.kind)+amountInput('Amount (€)',r?.amount||0,.01)+input('Date','date',r?.date||today(),'type="date"')],
  holdings:()=>[r?'Edit holding':'Add holding',textInput('Holding name',r?.name||'')+select('Type',['Investment','Asset','Liability'],r?.kind)+amountInput('Current value (€)',r?.amount||0)],
  goals:()=>[r?'Edit goal':'Add goal',textInput('Goal name',r?.name||'')+amountInput('Target (€)',r?.amount||0,.01)],
- pin:()=>['App PIN','<p class="sub">Locks when you leave the app. Keep your PIN safe. It is needed to open your encrypted wallet.</p>'+(cryptoKey?pinInput('Current PIN','current'):'')+pinInput('New six-digit PIN','pin')+pinInput('Confirm new PIN','confirm')+(cryptoKey?btn('Remove PIN','removePin','smallBtn danger'):'')],
+ face:()=>[biometric?'Turn off Face ID':'Set up Face ID',cryptoKey?pinInput('Current wallet PIN','current'):'<p class="sub">Choose a recovery PIN for this wallet.</p>'+pinInput('Recovery PIN','pin')+pinInput('Confirm PIN','confirm')],
+ pin:()=>['App PIN' ,'<p class="sub">Locks when you leave the app. Keep your PIN safe. It is needed to open your encrypted wallet.</p>'+(cryptoKey?pinInput('Current PIN','current'):'')+pinInput('New six-digit PIN','pin')+pinInput('Confirm new PIN','confirm')+(cryptoKey?btn('Remove PIN','removePin','smallBtn danger'):'')],
  removePin:()=>['Remove PIN',pinInput('Current PIN','current')]
  };
- const [title,html]=extraFields(action,id,r)||fields[action]();$('#sheetTitle').textContent=title;$('#fields').innerHTML=html+(r?btn('Delete entry','delete','smallBtn danger'):'');$('#error').textContent='';if(!sheet.open)sheet.showModal();
+ const [title,html]=extraFields(action,id,r)||fields[action]();$('#sheetTitle').textContent=title;$('#fields').innerHTML=html+(r?btn('Delete entry','delete','smallBtn danger'):'');$('#error').textContent='';previewAmount();if(!sheet.open)sheet.showModal();
 }
 async function unlock(pin){
  const stored=JSON.parse(localStorage.getItem(keyName));const k=await derive(pin,stored.salt);
+ return readEncrypted(stored,k);
+}
+async function readEncrypted(stored,k){
  const bytes=await crypto.subtle.decrypt({name:'AES-GCM',iv:from64(stored.iv)},k,from64(stored.cipher));
  return {data:JSON.parse(new TextDecoder().decode(bytes)),k,s:stored.salt};
 }
@@ -79,25 +104,41 @@ function lock(){
  walletMotion.clear();
  pageOffsets.clear();
  wallet=null;cryptoKey=null;salt=null;tab='Wallet';customPage='home';viewState.search='';document.querySelectorAll('dialog[open]').forEach(d=>d.close());$('#fields').replaceChildren();
- app.innerHTML=mast+'<form class="lockbox" id="unlock"><h1>Welcome back</h1>'+pinInput('Wallet PIN','pin')+'<p class="err" role="alert"></p><button class="primary">Unlock wallet</button></form>';
- $('#unlock').onsubmit=async e=>{
-  e.preventDefault();const f=e.currentTarget;
+ const stored=JSON.parse(localStorage.getItem(keyName));biometric=stored?.bio||null;
+ app.innerHTML=mast+'<form class="lockbox"  id="unlock"><h1>Welcome back</h1>'+(biometric?'<button type="button" class="primary" id="face-open">Unlock with Face ID</button>':'')+pinInput('Wallet PIN','pin')+'<p class="err" role="alert"></p><button class="primary">Unlock wallet</button></form>';
+ const f=$('#unlock');
+ let pending=false;
+ async function attempt(useFace){
+  if(pending||document.hidden)return;
+  pending=true;
   try{
-   const u=await unlock(f.pin.value);
-   if(document.hidden)return;
+   const u=await (useFace?faceLock.open(stored):unlock(f.pin.value));
+   if(document.hidden||!f.isConnected)return;
    wallet=u.data;cryptoKey=u.k;salt=u.s;render();
    if(launchAfterUnlock){
     launchAfterUnlock=false;document.documentElement.classList.add('wallet-opening');walletMotion.launch(Promise.resolve(),performance.now());
    }
-  }catch{f.querySelector('.err').textContent='Could not unlock. Check your PIN.'}
- };
+  }catch{f.querySelector('.err').textContent=useFace?'Tap Face ID to retry, or enter your wallet PIN.':'Could not unlock. Check your PIN.'}
+  finally{pending=false}
+ }
+ f.onsubmit=e=>{e.preventDefault();attempt(false)};
+ if(biometric){$('#face-open').onclick=()=>attempt(true);if(!document.hidden)requestAnimationFrame(()=>{if(f.isConnected)attempt(true)})}
 }
 async function save(remove=false){
  if(busy)return;busy=true;$('#save').disabled=true;
- try{const data=structuredClone(wallet),values=Object.fromEntries(new FormData(form)),amount=Math.round(Number(values.amount)*100);
- let k=cryptoKey,s=salt;
+ try{const data=structuredClone(wallet),values=Object.fromEntries(new FormData(form)),amount=values.amount===undefined||remove?0:parseAmount(values.amount,Number(form.elements.amount.dataset.min));
+ let k=cryptoKey,s=salt,bio=biometric;
  if(values.name!==undefined&&!values.name.trim()&&!remove)throw Error('Enter a name or description.');
- if(editAction==='pin'||editAction==='removePin'){
+ if(editAction==='face'){
+ const pin=k?values.current:values.pin;
+ if(k){await unlock(pin)}else if(pin!==values.confirm)throw Error('The recovery PINs do not match.');
+ if(bio){bio=null}else{
+ const enrollment=await faceLock.enroll();
+ if(!k){s=to64(crypto.getRandomValues(new Uint8Array(16)));k=await derive(pin,s)}
+ bio=await faceLock.wrap(enrollment,pin,s);
+ }
+ }else if(editAction==='pin'||editAction==='removePin'){
+ bio=null;
  if(k){try{await unlock(values.current)}catch{throw Error('Current PIN is incorrect.')}}
  if(editAction==='pin'){if(values.pin!==values.confirm)throw Error('The new PINs do not match.');s=to64(crypto.getRandomValues(new Uint8Array(16)));k=await derive(values.pin,s)}else{k=null;s=null}
  }else if(editAction==='balance')data.opening+=amount-cash();
@@ -109,8 +150,8 @@ async function save(remove=false){
  else{const record={id:recordId==='new'?crypto.randomUUID():recordId,name:values.name.trim(),amount};
  if(values.date)record.date=values.date;if(values.kind)record.kind=values.kind;
  if(index<0)list.unshift(record);else list[index]=record}}
- await persist(data,k,s);wallet=data;cryptoKey=k;salt=s;if(sheet.open)sheet.close();$('#fields').replaceChildren();render();
- }catch(err){if(sheet.open)$('#error').textContent=err.message;else alert('Could not save your change.')}
+ await persist(data,k,s,bio);biometric=bio;wallet=data;cryptoKey=k;salt=s;if(sheet.open)sheet.close();$('#fields').replaceChildren();render();
+ }catch(err){if(sheet.open)$('#error').textContent=err.name==='OperationError'?'Check your wallet PIN and try again.':err.message;else alert('Could not save your change.')}
  finally{busy=false;$('#save').disabled=false;if(document.hidden&&cryptoKey)lock()}
 }
 function init(){
@@ -134,6 +175,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||
 $('#close').onclick=()=>sheet.close();form.onsubmit=e=>{e.preventDefault();save()};
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&cryptoKey&&!busy)lock()});
 window.addEventListener('pagehide',()=>{if(cryptoKey&&!busy)lock()});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)document.getElementById('face-open')?.click()});
 applyAppearance();
 init();
 function activateFromAddress(){
@@ -145,5 +187,5 @@ if(document.querySelector('#unlock')&&document.documentElement.classList.contain
  launchAfterUnlock=true;document.documentElement.classList.remove('wallet-opening');activateFromAddress();
 }else walletMotion.launch(activateFromAddress());
 window.addEventListener('hashchange',activateFromAddress);
-if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>console.warn('Offline setup unavailable.'));
+if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).catch(()=>console.warn('Offline setup unavailable.'));
 

@@ -61,8 +61,8 @@ async function test(engine,base){
  assert.equal(installed.manifest.id,base);
  assert.equal(installed.manifest.display,'standalone');
  assert.deepEqual(Buffer.from(installed.bytes),fs.readFileSync(path.join(walletDir,'icon.png')));
- await view('settings');await click('[data-act="balance"]');await edit('[name=amount]','7500');await save();
- await click('[data-tab="Wallet"]');await expectText('.vbalance','7,500.00 EUR');
+ await view('settings');await click('[data-act="balance"]');await edit('[name=amount]','7500,37');await save();
+ await click('[data-tab="Wallet"]');await expectText('.vbalance','7,500.37 EUR');
  await view('cards');await view('freeze');await expectText('.vholder + div','Unfreeze card');
  await view('cardCode');await expectText('.notice','0000');await click('.notice button');
  await view('qr');await expectText('.v-cards h1','Pay with QR code');await view('cardface');await expectText('.v-cards h1','Cards');
@@ -73,12 +73,12 @@ async function test(engine,base){
  assert.equal(await page.locator('.v-recipients .vrow').count(),2);
  await view('payments');await view('request');await edit('[name=name]','Practice request');await edit('[name=amount]','22.50');await save();
  await view('plan/Payment requests');await expectText('.vmodal','Practice request');await click('.vmodal [data-close]');
- await view('home');await view('unit/EUR');await expectText('.vacchero','7,500.00 EUR');await view('convert');
- await edit('[name=amount]','100');await save();await expectText('.vacchero','7,400.00 EUR');
+ await view('home');await view('unit/EUR');await expectText('.vacchero','7,500.37 EUR');await view('convert');
+ await edit('[name=amount]','100');await save();await expectText('.vacchero','7,400.37 EUR');
  await view('home');await view('unit/USD');await expectText('.vacchero','108.00 USD');await view('home');
  await view('hide');await expectText('.vbalance','••••');await view('hide');
  await view('dismiss/schedule');await page.locator('.vschedule').waitFor({state:'hidden'});
- originAvailable=false;await page.reload();await expectText('.vbalance','7,500.00 EUR');
+ originAvailable=false;await page.reload();await expectText('.vbalance','7,500.37 EUR');
  await view('cards');await expectText('.vcardactions','Unfreeze card');
  originAvailable=true;
  const fresh=await browser.newContext({viewport:{width:320,height:650},isMobile:true,reducedMotion:'reduce'});
@@ -97,9 +97,20 @@ async function test(engine,base){
  await existing.goto(base);await existing.waitForFunction(()=>JSON.parse(localStorage.getItem('wallet-appearance-v1:/wallet/')).artRevision===3);
  assert.match(await existing.locator('.vbalance').innerText(),/6,543.21 EUR/);await migrated.close();
  await view('home');await view('settings');await click('[data-act="pin"]');await edit('[name=pin]','123456');await edit('[name=confirm]','123456');await save();
+ await page.addInitScript(()=>{
+  const secret=new Uint8Array(32).fill(17);
+  const response=()=>({rawId:Uint8Array.of(1,2,3).buffer,getClientExtensionResults:()=>({prf:{enabled:true,results:{first:secret.buffer}}})});
+  Object.defineProperty(window,'PublicKeyCredential',{configurable:true,value:function(){}});
+  Object.defineProperty(navigator,'credentials',{configurable:true,value:{create:async()=>response(),get:async()=>response()}});
+ });
+ await page.reload();await page.locator('#unlock [name=pin]').fill('123456');await click('#unlock button');
+ await view('settings');await click('[data-act="face"]');await edit('[name=current]','123456');await save();
+ assert(await page.evaluate(()=>!!JSON.parse(localStorage.getItem('wise-wallet:v1:/wallet/')).bio?.wrapped));
+ await page.reload();await expectText('.vbalance','7,500.37 EUR');
+ await view('settings');await click('[data-act="face"]');await edit('[name=current]','123456');await save();
  await page.reload();
  await page.locator('#unlock [name=pin]').fill('123456');assert.equal(await page.locator('#unlock [name=pin]').inputValue(),'123456');
- await click('#unlock button');await expectText('.vbalance','7,500.00 EUR');
+ await click('#unlock button');await expectText('.vbalance','7,500.37 EUR');
  await page.waitForFunction(()=>!document.documentElement.classList.contains('wallet-opening'));
  assert.deepEqual(errors,[]);
  console.log(engine.name()+' passed installation assets, fresh launch, balance, freeze, QR switching, recipients, requests, currency conversion, offline reload and PIN persistence');

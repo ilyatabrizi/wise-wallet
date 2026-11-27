@@ -66,7 +66,7 @@ function applyAppearance(){
  walletMotion.assets(personal);
  document.body.classList.toggle('personal',!!personal);
  document.documentElement.classList.toggle('video-wallet',!!personal);
- document.querySelector('meta[name=theme-color]').content=personal?'#fafafa':'#f6f7ef';
+ document.querySelector('meta[name=theme-color]').content=document.documentElement.classList.contains('wallet-opening')?'#94ed67':personal?'#fcfcfc':'#f6f7ef';
  document.querySelector('meta[name=apple-mobile-web-app-title]').content=personal?'Wise':'Wise Wallet';
  if(personal)applyInstallIdentity();
  else if(!location.pathname.endsWith('/install.html')&&!location.hash.startsWith('#look='))document.querySelector('link[rel=apple-touch-icon]').href='./icon.png';
@@ -116,7 +116,7 @@ function message(title,body){
  h.textContent=title;p.textContent=body;b.textContent='Done';b.className='primary';d.append(h,p,b);document.body.append(d);b.onclick=()=>d.close();d.onclose=()=>d.remove();d.showModal();
 }
 function recordFlow(kind,title){
- edit('entries','new');document.querySelector('#sheetTitle').textContent=title;form.elements.kind.value=kind;
+ edit('entries','new');document.querySelector('#sheetTitle').textContent=title;form.elements.kind.value=kind;previewAmount();
 }
 function goLook(a){
  if(a==='pasteLink'){const link=prompt('Paste your private wallet setup link');if(link)openAppearanceLink(link.trim());return}

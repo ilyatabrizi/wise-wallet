@@ -43,36 +43,51 @@ html.wallet-opening #launch-cover{
 }
 .launch-mark:not([style])::before{content:"";background:#183204;width:96%;height:95%;clip-path:polygon(10% 0,100% 0,65% 100%,45% 100%,75% 18%,34% 18%,46% 36%,32% 50%,52% 50%,47% 66%,0 66%,23% 36%)}
 .launch-tail,.launch-ribbon{
- position:absolute;top:100%;width:min(28.6vw,166px);height:115%;left:50%;
- border-radius:999px 999px 0 0 / min(14.3vw,83px) min(14.3vw,83px) 0 0;transform:translateX(-50%);will-change:transform
+ position:absolute;top:100%;left:50%;width:min(28.6vw,166px);height:130%;
+ transform:translate3d(-50%,0,0);will-change:transform;pointer-events:none;
+ border-radius:50% 50% 0 0 / min(14.3vw,83px) min(14.3vw,83px) 0 0
 }
-.launch-tail{background:#183300}
+.launch-tail{background:#193400}
 .launch-ribbon{
- background-image:var(--art,linear-gradient(150deg,#82d5c3 3%,#9394c5 19%,#b347ba 37%,#e12989 56%,#9534ad 74%));
- background-size:100% auto;background-repeat:repeat-y
+ background:var(--art,linear-gradient(135deg,#9aec72,#8457be 38%,#d53290)) center top/100% auto no-repeat;
+ background-color:#b14798;transform-origin:50% 0
 }
-.launch-ribbon:not([style])::before{content:'↑';position:absolute;top:2%;left:7%;width:86%;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;background:#94ed67;font:400 9vw/1 system-ui}
-.wallet-departing .launch-tail{animation:launch-tail-rise .79s linear both}
-.wallet-departing .launch-ribbon{animation:launch-ribbon-rise .79s linear both}
-.wallet-departing .launch-mark{animation:launch-mark-out .79s linear both}
-html.wallet-departing #launch-cover{animation:launch-crossfade .79s linear both}
-@keyframes launch-tail-rise{0%{transform:translate(-50%,0)}40%{transform:translate(-50%,-27dvh)}65%{transform:translate(-50%,-48dvh)}100%{transform:translate(-50%,-110dvh)}}
-@keyframes launch-ribbon-rise{0%,10%{transform:translate(-50%,0)}42%{transform:translate(-50%,-19dvh)}63%{transform:translate(-50%,-43dvh)}78%{transform:translate(-50%,-67dvh) scaleX(1.13)}100%{transform:translate(-50%,-106dvh) scaleX(1.46)}}
-@keyframes launch-mark-out{0%,55%{opacity:1}74%,100%{opacity:0}}
-@keyframes launch-crossfade{0%,75%{opacity:1}100%{opacity:0}}
+html.wallet-departing #launch-cover{animation:launch-crossfade .82s linear both}
+.wallet-departing .launch-tail{animation:launch-tail-rise .82s cubic-bezier(.27,.16,.51,.81) both}
+.wallet-departing .launch-ribbon{animation:launch-ribbon-rise .82s cubic-bezier(.44,.08,.59,.97) both}
+.wallet-departing .launch-mark{animation:launch-mark-out .82s linear both}
+@keyframes launch-tail-rise{0%{transform:translate3d(-50%,0,0)}64%,100%{transform:translate3d(-50%,-60dvh,0)}}
+@keyframes launch-ribbon-rise{0%,8%{transform:translate3d(-50%,5dvh,0) scaleX(1)}100%{transform:translate3d(-50%,-116dvh,0) scaleX(1.32)}}
+@keyframes launch-mark-out{0%,52%{opacity:1}65%,100%{opacity:0}}
+@keyframes launch-crossfade{0%,65%{opacity:1}78%{opacity:.84}90%{opacity:.35}100%{opacity:0}}
 .wallet-load-track{
  position:fixed;z-index:2;top:calc(env(safe-area-inset-top) + 8px);left:50%;transform:translateX(-50%);
- width:min(calc(100% - 32px),534px);height:4px;border-radius:10px;overflow:hidden;background:#dededb;pointer-events:none
+ width:min(calc(100% - 32px),534px);height:3px;border-radius:10px;overflow:hidden;background:#dededb;pointer-events:none
 }
-.wallet-load-track i{display:block;height:100%;width:100%;transform-origin:left;border-radius:inherit;background:repeating-linear-gradient(118deg,#1b5716 0 5px,#538234 7px,#214b13 10px);animation:wallet-progress var(--load-time) cubic-bezier(.35,.04,.2,1) both}
-.wallet-load-track.track-done{opacity:0;transition:opacity .15s ease}
+.wallet-load-track{background:#ebede8;animation:track-in .09s ease-out both}
+.wallet-load-track i{display:block;height:100%;width:100%;transform-origin:left;border-radius:inherit;
+ background:linear-gradient(90deg,#284e1e,#6ba746 75%,#477335);will-change:transform;
+ animation:wallet-progress var(--load-time) linear both}
+.wallet-load-track.track-done{animation:track-out .14s ease-in both}
+@keyframes track-in{from{opacity:0}to{opacity:1}}
+@keyframes track-out{to{opacity:0}}
 .page-waiting{opacity:0;pointer-events:none}
+.v-account .vseg{position:sticky;top:calc(env(safe-area-inset-top) + 53px);z-index:1}
+.vsticky{display:flex;align-items:center;gap:2px;font-size:15px;pointer-events:none}
+.vsticky .vbranddot,.vsticky .vflag{display:grid;place-items:center;width:20px;height:20px;border-radius:50%}
+.vsticky .vflag{margin:0 3px 0 -5px}.vsticky .vmark{width:10px;height:10px}
+.video-wallet[style*="--wallet-mark"] .vmark{background:var(--wallet-mark) center/contain no-repeat;clip-path:none}
+.vpayments .vleading{position:relative}
+.vpayments .vrow:not(:first-child) .vleading::after{content:'+';position:absolute;bottom:-1px;right:-1px;width:13px;height:13px;display:grid;place-items:center;border:1px solid #fcfcfc;border-radius:50%;background:#a3ec78;color:#173400;font:650 11px/1 "Wallet Inter",sans-serif}
 .wallet-exit-layer{position:fixed;inset:0;max-width:580px;margin-inline:auto;overflow:hidden;pointer-events:none;background:#fcfcfc}
 .wallet-exit-layer.exit-ahead{z-index:2}.wallet-exit-layer.exit-behind{z-index:0}
 .vscreen.pushed-page{position:relative;z-index:1;background:#fcfcfc}.personal .vdock{z-index:3}
 .vdock.dock-moving button{position:relative;z-index:1}.vdock.dock-moving [aria-current]{background:transparent}
 .vselection{position:absolute;top:3px;bottom:3px;background:#b8b8b26b;border-radius:50px;pointer-events:none}
 .page-appearing{animation:wallet-reveal .16s ease-out both}
-@keyframes wallet-progress{from{transform:scaleX(.015)}to{transform:scaleX(1)}}
+@keyframes wallet-progress{0%{transform:scaleX(0)}18%{transform:scaleX(.075)}55%{transform:scaleX(.53)}85%{transform:scaleX(.91)}100%{transform:scaleX(1)}}
 @keyframes wallet-reveal{from{opacity:0}to{opacity:1}}
 @media(prefers-reduced-motion:reduce){.personal *,.wallet-opening *{scroll-behavior:auto!important}.personal :is(.vsurface,.vavatar,.vchip,.vbubble,.vround,.vdock button){transition:none}.page-appearing{animation:none}}
+
+.amount-preview{display:block;min-height:1.4em;color:var(--quiet,#555);font-variant-numeric:tabular-nums}.amount-preview:empty{display:none}
+#face-open{width:100%;margin:4px 0 18px}.lockbox input{font-size:18px}

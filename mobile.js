@@ -4,6 +4,9 @@ const walletMotion = (() => {
  const tabTimes = {home:220, cards:320, recipients:1160, payments:250};
  function clear(){stopTransition();stopTransition=()=>{}}
  function assets(theme){
+  const root=document.documentElement;
+  if(theme?.film?.launchMark)root.style.setProperty('--wallet-mark','url("'+theme.film.launchMark+'")');
+  else root.style.removeProperty('--wallet-mark');
   const cover=document.getElementById('launch-cover');
   if(!cover||!theme?.film)return;
   for(const [selector,key] of [['.launch-mark','launchMark'],['.launch-ribbon','launchRibbon']]){
@@ -20,6 +23,7 @@ const walletMotion = (() => {
    ended=true;
    clearTimeout(timer);
    root.classList.remove('wallet-opening','wallet-departing');
+   document.querySelector('meta[name=theme-color]').content=document.body.classList.contains('personal')?'#fcfcfc':'#f6f7ef';
    cover.remove();
    document.getElementById('app').inert=false;
    window.removeEventListener('pagehide',finish);
@@ -32,13 +36,14 @@ const walletMotion = (() => {
   reduced.addEventListener('change',onMotion);
   document.addEventListener('visibilitychange',onVisibility);
   document.getElementById('app').inert=true;
+  document.querySelector('meta[name=theme-color]').content='#94ed67';
   timer=setTimeout(finish,6500);
   if(reduced.matches){await activation;finish();return}
-  await Promise.all([activation,document.fonts.ready,new Promise(resolve=>setTimeout(resolve,Math.max(0,3150-(performance.now()-startTime))))]);
+  await Promise.all([activation,document.fonts.ready,new Promise(resolve=>setTimeout(resolve,Math.max(0,1350-(performance.now()-startTime))))]);
   if(ended)return;
   root.classList.add('wallet-departing');
   cover.addEventListener('animationend',event=>{if(event.target===cover)finish()});
-  clearTimeout(timer);timer=setTimeout(finish,920);
+  clearTimeout(timer);timer=setTimeout(finish,1020);
  }
  function transition(from,to,style,outgoing,oldScroll){
   clear();
@@ -77,12 +82,16 @@ const walletMotion = (() => {
   const delay=tabTimes[to]??260;
   track.style.setProperty('--load-time',delay+'ms');
   page.classList.add('page-waiting');page.setAttribute('aria-busy','true');page.inert=true;
-  const reveal=setTimeout(()=>{
+  // Let Safari commit the blank loading surface before starting its timings.
+  let done,reveal;
+  const frame=requestAnimationFrame(()=>{
+   reveal=setTimeout(()=>{
    page.inert=false;page.removeAttribute('aria-busy');page.classList.replace('page-waiting','page-appearing');track.classList.add('track-done');
   },delay);
-  const done=setTimeout(()=>{track.remove();page.classList.remove('page-appearing')},delay+180);
+  done=setTimeout(()=>{track.remove();page.classList.remove('page-appearing')},delay+180);
+  });
   stopTransition=()=>{
-   clearTimeout(reveal);clearTimeout(done);track.remove();page.inert=false;page.removeAttribute('aria-busy');page.classList.remove('page-waiting','page-appearing');
+   cancelAnimationFrame(frame);clearTimeout(reveal);clearTimeout(done);track.remove();page.inert=false;page.removeAttribute('aria-busy');page.classList.remove('page-waiting','page-appearing');
   };
  }
  reduced.addEventListener('change',()=>{if(reduced.matches)clear()});
