@@ -74,12 +74,23 @@ async function unlock(pin){
  const bytes=await crypto.subtle.decrypt({name:'AES-GCM',iv:from64(stored.iv)},k,from64(stored.cipher));
  return {data:JSON.parse(new TextDecoder().decode(bytes)),k,s:stored.salt};
 }
+let launchAfterUnlock=false;
 function lock(){
  walletMotion.clear();
  pageOffsets.clear();
  wallet=null;cryptoKey=null;salt=null;tab='Wallet';customPage='home';viewState.search='';document.querySelectorAll('dialog[open]').forEach(d=>d.close());$('#fields').replaceChildren();
  app.innerHTML=mast+'<form class="lockbox" id="unlock"><h1>Welcome back</h1>'+pinInput('Wallet PIN','pin')+'<p class="err" role="alert"></p><button class="primary">Unlock wallet</button></form>';
- $('#unlock').onsubmit=async e=>{e.preventDefault();const f=e.currentTarget;try{const u=await unlock(f.pin.value);if(document.hidden)return;wallet=u.data;cryptoKey=u.k;salt=u.s;render()}catch{f.querySelector('.err').textContent='Could not unlock. Check your PIN.'}};
+ $('#unlock').onsubmit=async e=>{
+  e.preventDefault();const f=e.currentTarget;
+  try{
+   const u=await unlock(f.pin.value);
+   if(document.hidden)return;
+   wallet=u.data;cryptoKey=u.k;salt=u.s;render();
+   if(launchAfterUnlock){
+    launchAfterUnlock=false;document.documentElement.classList.add('wallet-opening');walletMotion.launch(Promise.resolve(),performance.now());
+   }
+  }catch{f.querySelector('.err').textContent='Could not unlock. Check your PIN.'}
+ };
 }
 async function save(remove=false){
  if(busy)return;busy=true;$('#save').disabled=true;
@@ -130,7 +141,9 @@ function activateFromAddress(){
  const stored=localStorage.getItem(appearanceKey+':activation');
  if(personal&&personal.artRevision!==3&&stored)return openAppearanceLink(new URL('./',location.href).href+'#look='+stored,true,true);
 }
-walletMotion.launch(activateFromAddress());
+if(document.querySelector('#unlock')&&document.documentElement.classList.contains('wallet-opening')){
+ launchAfterUnlock=true;document.documentElement.classList.remove('wallet-opening');activateFromAddress();
+}else walletMotion.launch(activateFromAddress());
 window.addEventListener('hashchange',activateFromAddress);
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>console.warn('Offline setup unavailable.'));
 

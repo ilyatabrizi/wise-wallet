@@ -24,6 +24,10 @@ async function test(engine,base){
  try{
  const ctx=await browser.newContext({viewport:{width:393,height:852},hasTouch:true,isMobile:true});
  const page=await ctx.newPage(),errors=[];
+ await page.addInitScript(()=>{
+  window.launchedAnimations=[];
+  document.addEventListener('animationstart',e=>window.launchedAnimations.push(e.animationName));
+ });
  page.on('pageerror',e=>errors.push(e.message));
  page.on('dialog',async d=>{errors.push(d.message());await d.accept()});
  const url=base+'install.html#look='+key.toString('base64url');
@@ -35,6 +39,7 @@ async function test(engine,base){
  await page.goto(url);
  await expectText('.vbalance','130.38 EUR');
  await page.waitForFunction(()=>!document.documentElement.classList.contains('wallet-opening'));
+ assert(await page.evaluate(()=>window.launchedAnimations.includes('launch-ribbon-rise')&&window.launchedAnimations.includes('launch-crossfade')));
  assert(await page.evaluate(async()=>{
   await document.fonts.ready;
   return Array.from(document.fonts).some(f=>f.family.includes('Wallet Inter')&&f.status==='loaded')&&getComputedStyle(document.querySelector('.vbalance strong')).fontFamily.includes('Wallet Inter');
@@ -81,8 +86,21 @@ async function test(engine,base){
  await second.locator('nav [data-v=cards]').click();await second.locator('.v-cards').waitFor();assert.equal(await second.locator('.wallet-load-track').count(),0);
  assert(await second.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
  await fresh.close();
+ const migrated=await browser.newContext({reducedMotion:'reduce'});
+ const existing=await migrated.newPage();
+ await existing.addInitScript(({pack,key})=>{
+  const prefix='wallet-appearance-v1:/wallet/';
+  const legacy={...pack};delete legacy.artRevision;
+  localStorage.setItem(prefix,JSON.stringify(legacy));localStorage.setItem(prefix+':activation',key);
+  localStorage.setItem('wise-wallet:v1:/wallet/',JSON.stringify({data:{name:'Demo holder',last:'4444',opening:654321,entries:[],goals:[],holdings:[],limit:100000}}));
+ },{pack,key:key.toString('base64url')});
+ await existing.goto(base);await existing.waitForFunction(()=>JSON.parse(localStorage.getItem('wallet-appearance-v1:/wallet/')).artRevision===3);
+ assert.match(await existing.locator('.vbalance').innerText(),/6,543.21 EUR/);await migrated.close();
  await view('home');await view('settings');await click('[data-act="pin"]');await edit('[name=pin]','123456');await edit('[name=confirm]','123456');await save();
- await page.reload();await page.locator('#unlock [name=pin]').fill('123456');await click('#unlock button');await expectText('.vbalance','7,500.00 EUR');
+ await page.reload();
+ await page.locator('#unlock [name=pin]').fill('123456');assert.equal(await page.locator('#unlock [name=pin]').inputValue(),'123456');
+ await click('#unlock button');await expectText('.vbalance','7,500.00 EUR');
+ await page.waitForFunction(()=>!document.documentElement.classList.contains('wallet-opening'));
  assert.deepEqual(errors,[]);
  console.log(engine.name()+' passed installation assets, fresh launch, balance, freeze, QR switching, recipients, requests, currency conversion, offline reload and PIN persistence');
  }finally{await browser.close()}

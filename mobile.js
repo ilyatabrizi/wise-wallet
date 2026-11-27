@@ -11,7 +11,7 @@ const walletMotion = (() => {
    if(src)cover.querySelector(selector).style.setProperty('--art','url("'+src+'")');
   }
  }
- async function launch(activation){
+ async function launch(activation,startTime=0){
   const root=document.documentElement, cover=document.getElementById('launch-cover');
   if(!cover||!root.classList.contains('wallet-opening')){await activation;return}
   let ended=false, timer;
@@ -34,22 +34,41 @@ const walletMotion = (() => {
   document.getElementById('app').inert=true;
   timer=setTimeout(finish,6500);
   if(reduced.matches){await activation;finish();return}
-  await Promise.all([activation,document.fonts.ready,new Promise(resolve=>setTimeout(resolve,Math.max(0,3150-performance.now())))]);
+  await Promise.all([activation,document.fonts.ready,new Promise(resolve=>setTimeout(resolve,Math.max(0,3150-(performance.now()-startTime))))]);
   if(ended)return;
   root.classList.add('wallet-departing');
   cover.addEventListener('animationend',event=>{if(event.target===cover)finish()});
   clearTimeout(timer);timer=setTimeout(finish,920);
  }
- function transition(from,to,style){
+ function transition(from,to,style,outgoing,oldScroll){
   clear();
   if(!from||from===to||reduced.matches||document.hidden)return;
   const page=document.querySelector('.vscreen');
   if(!page)return;
   if(style==='forward'||style==='back'){
-   const offset=style==='forward'?'98%':'-22%';
-   const animation=page.animate([{transform:'translateX('+offset+')',opacity:.75},{transform:'translateX(0)',opacity:1}],{duration:300,easing:'cubic-bezier(.22,.7,.13,1)'});
-   stopTransition=()=>animation.cancel();
+   const forward=style==='forward',timing={duration:300,easing:'cubic-bezier(.22,.7,.13,1)'};
+   const animation=page.animate([{transform:'translateX('+(forward?'100%':'-24%')+')'},{transform:'translateX(0)'}],timing);
+   let layer=null;
+   if(outgoing){
+    layer=document.createElement('div');layer.className='wallet-exit-layer '+(forward?'exit-behind':'exit-ahead');
+    layer.inert=true;layer.setAttribute('aria-hidden','true');
+    for(const element of outgoing.querySelectorAll('[id]'))element.removeAttribute('id');
+    outgoing.style.marginTop=-oldScroll+'px';layer.append(outgoing);page.before(layer);
+    layer.animate([{transform:'translateX(0)'},{transform:'translateX('+(forward?'-24%':'100%')+')'}],timing);
+   }
+   page.classList.add('pushed-page');
+   const clean=()=>{layer?.remove();page.classList.remove('pushed-page')};
+   animation.finished.then(clean,clean);
+   stopTransition=()=>{animation.cancel();clean()};
    return;
+  }
+  const dock=document.querySelector('.vdock'),previous=dock?.querySelector('[data-v="'+from+'"]'),selected=dock?.querySelector('[aria-current]');
+  if(previous&&selected){
+   const marker=document.createElement('i');marker.className='vselection';marker.setAttribute('aria-hidden','true');
+   marker.style.left=selected.offsetLeft+'px';marker.style.width=selected.offsetWidth+'px';
+   dock.prepend(marker);dock.classList.add('dock-moving');
+   const settle=()=>{marker.remove();dock.classList.remove('dock-moving')};
+   marker.animate([{transform:'translateX('+(previous.offsetLeft-selected.offsetLeft)+'px)'},{transform:'translateX(0)'}],{duration:225,easing:'cubic-bezier(.22,.7,.13,1)'}).finished.then(settle,settle);
   }
   const track=document.createElement('div');track.className='wallet-load-track';
   track.setAttribute('role','status');track.setAttribute('aria-label','Loading '+to);
@@ -82,4 +101,14 @@ for(const name of ['touchstart','touchmove']){
 document.addEventListener('dblclick',event=>{
  if(!event.target.closest('input,textarea,[contenteditable="true"]'))preventZoom(event);
 },{passive:false});
+let lastTap=null;
+document.addEventListener('touchend',event=>{
+ const point=event.changedTouches[0];
+ if(!point||event.touches.length||event.target.closest('button,a,input,textarea,select,[contenteditable="true"]')){lastTap=null;return}
+ if(lastTap&&lastTap.target===event.target&&event.timeStamp-lastTap.time<290&&Math.hypot(point.clientX-lastTap.x,point.clientY-lastTap.y)<22){
+  preventZoom(event);lastTap=null;return;
+ }
+ lastTap={target:event.target,time:event.timeStamp,x:point.clientX,y:point.clientY};
+},{passive:false});
+document.addEventListener('touchcancel',()=>{lastTap=null},{passive:true});
 document.addEventListener('wheel',event=>{if(event.ctrlKey)preventZoom(event)},{passive:false});

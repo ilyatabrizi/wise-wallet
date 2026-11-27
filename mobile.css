@@ -67,6 +67,11 @@ html.wallet-departing #launch-cover{animation:launch-crossfade .79s linear both}
 .wallet-load-track i{display:block;height:100%;width:100%;transform-origin:left;border-radius:inherit;background:repeating-linear-gradient(118deg,#1b5716 0 5px,#538234 7px,#214b13 10px);animation:wallet-progress var(--load-time) cubic-bezier(.35,.04,.2,1) both}
 .wallet-load-track.track-done{opacity:0;transition:opacity .15s ease}
 .page-waiting{opacity:0;pointer-events:none}
+.wallet-exit-layer{position:fixed;inset:0;max-width:580px;margin-inline:auto;overflow:hidden;pointer-events:none;background:#fcfcfc}
+.wallet-exit-layer.exit-ahead{z-index:2}.wallet-exit-layer.exit-behind{z-index:0}
+.vscreen.pushed-page{position:relative;z-index:1;background:#fcfcfc}.personal .vdock{z-index:3}
+.vdock.dock-moving button{position:relative;z-index:1}.vdock.dock-moving [aria-current]{background:transparent}
+.vselection{position:absolute;top:3px;bottom:3px;background:#b8b8b26b;border-radius:50px;pointer-events:none}
 .page-appearing{animation:wallet-reveal .16s ease-out both}
 @keyframes wallet-progress{from{transform:scaleX(.015)}to{transform:scaleX(1)}}
 @keyframes wallet-reveal{from{opacity:0}to{opacity:1}}

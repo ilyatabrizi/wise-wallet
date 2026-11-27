@@ -127,7 +127,9 @@ function goLook(a){
   const style=detail?'forward':from==='account'||from==='cards'&&a==='home'&&viewState.cardFromHome?'back':'tab';
   if(from)pageOffsets.set(from,scrollY);
   const offset=from===a||detail?0:pageOffsets.get(a)||0;
-  tab='Wallet';customPage=a;render();scrollTo(0,offset);walletMotion.transition(from,a,style);return;
+  const outgoing=style==='tab'?null:app.querySelector(':scope > .vscreen');
+  const oldScroll=scrollY;
+  tab='Wallet';customPage=a;render();scrollTo(0,offset);walletMotion.transition(from,a,style,outgoing,oldScroll);return;
  }
  if(['settings','wealth','activity','resources','options','back'].includes(a)){tab=({wealth:'Wealth',activity:'Activity',back:'Wallet'})[a]||'Settings';customPage='home';render();scrollTo(0,0);return}
  if(a==='import'||a==='upload'){document.querySelector('#appearance-file').click();return}
