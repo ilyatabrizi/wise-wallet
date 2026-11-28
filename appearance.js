@@ -66,7 +66,7 @@ function applyAppearance(){
  walletMotion.assets(personal);
  document.body.classList.toggle('personal',!!personal);
  document.documentElement.classList.toggle('video-wallet',!!personal);
- document.querySelector('meta[name=theme-color]').content=document.documentElement.classList.contains('wallet-opening')?'#94ed67':personal?'#fcfcfc':'#f6f7ef';
+ walletMotion.updateThemeColor();
  document.querySelector('meta[name=apple-mobile-web-app-title]').content=personal?'Wise':'Wise Wallet';
  if(personal)applyInstallIdentity();
  else if(!location.pathname.endsWith('/install.html')&&!location.hash.startsWith('#look='))document.querySelector('link[rel=apple-touch-icon]').href='./icon.png';

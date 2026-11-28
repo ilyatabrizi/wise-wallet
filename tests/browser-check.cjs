@@ -101,12 +101,26 @@ async function test(engine,base){
   const secret=new Uint8Array(32).fill(17);
   const response=()=>({rawId:Uint8Array.of(1,2,3).buffer,getClientExtensionResults:()=>({prf:{enabled:true,results:{first:secret.buffer}}})});
   Object.defineProperty(window,'PublicKeyCredential',{configurable:true,value:function(){}});
-  Object.defineProperty(navigator,'credentials',{configurable:true,value:{create:async()=>response(),get:async()=>response()}});
+  Object.defineProperty(navigator,'credentials',{configurable:true,value:{create:async()=>response(),get:async()=>{await new Promise((resolve,reject)=>{window.allowFace=resolve;window.cancelFace=()=>reject(new Error("Cancelled"))}).finally(()=>{delete window.cancelFace;delete window.allowFace});return response()}}});
  });
  await page.reload();await page.locator('#unlock [name=pin]').fill('123456');await click('#unlock button');
  await view('settings');await click('[data-act="face"]');await edit('[name=current]','123456');await save();
  assert(await page.evaluate(()=>!!JSON.parse(localStorage.getItem('wise-wallet:v1:/wallet/')).bio?.wrapped));
- await page.reload();await expectText('.vbalance','7,500.37 EUR');
+ await page.reload();await page.waitForFunction(()=>!!window.cancelFace);
+ const verifyBackdrop=async()=>{
+  assert(await page.locator('#launch-cover .launch-mark').isVisible());
+  assert.equal(await page.locator('#launch-cover').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(148, 237, 103)');
+  assert.equal(await page.locator('#unlock').isVisible(),false);
+  assert.equal(await page.locator('.launch-ribbon').isVisible(),false);
+ };
+ await verifyBackdrop();
+ await page.evaluate(()=>window.cancelFace());await page.locator('#unlock [name=pin]').waitFor();
+ await click('#face-open');await verifyBackdrop();
+ await page.evaluate(()=>window.allowFace());await expectText('.vbalance','7,500.37 EUR');
+ await page.waitForFunction(()=>!document.documentElement.classList.contains('wallet-opening'));
+ // Relock after launch to exercise reuse of the same logo cover.
+ await page.evaluate(()=>{lock()});await verifyBackdrop();await page.waitForFunction(()=>!!window.allowFace);
+ await page.evaluate(()=>window.allowFace());await expectText('.vbalance','7,500.37 EUR');
  await view('settings');await click('[data-act="face"]');await edit('[name=current]','123456');await save();
  await page.reload();
  await page.locator('#unlock [name=pin]').fill('123456');assert.equal(await page.locator('#unlock [name=pin]').inputValue(),'123456');

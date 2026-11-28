@@ -3,6 +3,16 @@ const walletMotion = (() => {
  let stopTransition = () => {};
  const tabTimes = {home:220, cards:320, recipients:1160, payments:250};
  function clear(){stopTransition();stopTransition=()=>{}}
+ function updateThemeColor(){
+  const classes=document.documentElement.classList;
+  document.querySelector('meta[name=theme-color]').content=
+   classes.contains('wallet-opening')||classes.contains('face-pending')?'#94ed67':
+   document.body.classList.contains('personal')?'#fcfcfc':'#f6f7ef';
+ }
+ function facePending(active){
+  document.documentElement.classList.toggle('face-pending',active);
+  updateThemeColor();
+ }
  function assets(theme){
   const root=document.documentElement;
   if(theme?.film?.launchMark)root.style.setProperty('--wallet-mark','url("'+theme.film.launchMark+'")');
@@ -22,9 +32,9 @@ const walletMotion = (() => {
    if(ended)return;
    ended=true;
    clearTimeout(timer);
+   cover.onanimationend=null;
    root.classList.remove('wallet-opening','wallet-departing');
-   document.querySelector('meta[name=theme-color]').content=document.body.classList.contains('personal')?'#fcfcfc':'#f6f7ef';
-   cover.remove();
+   updateThemeColor();
    document.getElementById('app').inert=false;
    window.removeEventListener('pagehide',finish);
    document.removeEventListener('visibilitychange',onVisibility);
@@ -42,7 +52,7 @@ const walletMotion = (() => {
   await Promise.all([activation,document.fonts.ready,new Promise(resolve=>setTimeout(resolve,Math.max(0,1350-(performance.now()-startTime))))]);
   if(ended)return;
   root.classList.add('wallet-departing');
-  cover.addEventListener('animationend',event=>{if(event.target===cover)finish()});
+  cover.onanimationend=event=>{if(event.target===cover)finish()};
   clearTimeout(timer);timer=setTimeout(finish,1020);
  }
  function transition(from,to,style,outgoing,oldScroll){
@@ -96,7 +106,7 @@ const walletMotion = (() => {
  }
  reduced.addEventListener('change',()=>{if(reduced.matches)clear()});
  document.addEventListener('visibilitychange',()=>{if(document.hidden)clear()});
- return {clear,transition,assets,launch};
+ return {clear,transition,assets,launch,facePending,updateThemeColor};
 })();
 
 // Keep one-finger scrolling, carousels and form controls usable at the installed viewport size.

@@ -33,8 +33,8 @@ input:not([type=range]),select,textarea,.vcalc input{font-size:max(16px,1em)}
 .personal :is(.vsurface,.vavatar,.vchip,.vbubble,.vround,.vdock button){transition:transform .13s ease,background-color .18s ease}
 .personal :is(.vsurface,.vavatar,.vchip,.vbubble,.vround,.vdock button):active{transform:scale(.97)}
 #launch-cover{display:none}
-html.wallet-opening,html.wallet-opening body{background:#94ed67}
-html.wallet-opening #launch-cover{
+html.face-pending,html.face-pending body,html.wallet-opening,html.wallet-opening body{background:#94ed67}
+html.face-pending #launch-cover,html.wallet-opening #launch-cover{
  display:grid;position:fixed;inset:0;z-index:30;place-items:center;background:#94ed67;overflow:hidden;isolation:isolate
 }
 .launch-mark{
@@ -91,3 +91,7 @@ html.wallet-departing #launch-cover{animation:launch-crossfade .82s linear both}
 
 .amount-preview{display:block;min-height:1.4em;color:var(--quiet,#555);font-variant-numeric:tabular-nums}.amount-preview:empty{display:none}
 #face-open{width:100%;margin:4px 0 18px}.lockbox input{font-size:18px}
+
+html.face-pending #app{visibility:hidden}
+html.face-pending #launch-cover,html.face-pending .launch-mark{animation:none;opacity:1}
+html.face-pending :is(.launch-tail,.launch-ribbon){display:none}
